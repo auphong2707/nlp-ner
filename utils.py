@@ -37,7 +37,7 @@ def load_jsonl(file_path) -> list:
 # Preprocessing function: Tokenize and align labels
 def tokenize_and_align_labels(example):
     # Tokenize while telling the tokenizer that the input is already split into words.
-    tokenized_inputs = TOKENIZER(example["tokens"], truncation=True, is_split_into_words=True)
+    tokenized_inputs = TOKENIZER(example["tokens"], truncation=True, padding="max_length", is_split_into_words=True)
     labels = []
     word_ids = tokenized_inputs.word_ids()  # Map tokens back to word indices
     previous_word_idx = None
