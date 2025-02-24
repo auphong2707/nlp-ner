@@ -55,7 +55,7 @@ checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR)
 if checkpoint:
     model = BertForTokenClassification.from_pretrained(checkpoint)
 else:
-    model = BertForTokenClassification.from_pretrained(MODEL_BERT_NER)
+    model = BertForTokenClassification.from_pretrained(MODEL_BERT_NER, num_labels=len(label_list))
 
 # Create training arguments
 training_args = TrainingArguments(
