@@ -19,9 +19,16 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
-    
-    true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in labels]
-    pred_labels = [[ID2LABEL[p] for p, l in zip(pred, label) if l != -100] for pred, label in zip(predictions, labels)]
+
+    true_labels = []
+    # Convert the labels to the original format
+    for label in labels:
+        true_labels.append([ID2LABEL[l] for l in label])
+
+    pred_labels = []
+    # Convert the predictions to the original format
+    for prediction in predictions:
+        pred_labels.append([ID2LABEL[l] for l in prediction])
     
     results = metric.compute(predictions=pred_labels, references=true_labels)
     
