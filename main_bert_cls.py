@@ -63,8 +63,10 @@ else:
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME,
     report_to="wandb",
-    evaluation_strategy='epoch',
-    save_strategy='epoch',
+    evaluation_strategy='steps',
+    save_strategy='steps',
+    eval_steps=30,
+    save_steps=30,
     learning_rate=LR_BERT,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_BERT,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_BERT,
@@ -88,6 +90,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=TOKENIZER_BERT,
+    preprocess_logits_for_metrics=(lambda logits, labels: logits[0].argmax(dim=-1)),
     compute_metrics=compute_metrics,
 )
 
