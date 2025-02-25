@@ -19,6 +19,7 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
+    print(predictions.shape)
     
     true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in labels]
     pred_labels = [[ID2LABEL[p] for p, l in zip(pred, label) if l != -100] for pred, label in zip(predictions, labels)]
