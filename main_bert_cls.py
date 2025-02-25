@@ -23,12 +23,12 @@ def compute_metrics(eval_pred):
     true_labels = []
     # Convert the labels to the original format
     for label in labels:
-        true_labels.append([ID2LABEL[l] for l in label])
+        true_labels.append([ID2LABEL[l] for l in label if l != -100])
 
     pred_labels = []
     # Convert the predictions to the original format
     for prediction in predictions:
-        pred_labels.append([ID2LABEL[l] for l in prediction])
+        pred_labels.append([ID2LABEL[l] for l in prediction if l != -100])
     
     results = metric.compute(predictions=pred_labels, references=true_labels)
     
