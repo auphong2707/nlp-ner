@@ -6,16 +6,10 @@ RESULTS_DIR = "./results/"
 LOGGING_STEPS = 86
 SEED = 42
 
-# [I - CODE SUMMARIZATION]
-RESULTS_CS_DIR = RESULTS_DIR + "code-summarization/"
-CS_INPUT_MAX_LENGTH = 256
-CS_OUTPUT_MAX_LENGTH = 128
-CS_NUM_BEAMS = 5
-
 # [1. CODE BERT HYPERPARAMETERS]
-MODEL_BERT_NER = "dbmdz/bert-large-cased-finetuned-conll03-english"
-TOKENIZER_BERT = "dbmdz/bert-large-cased-finetuned-conll03-english"
-RESULTS_BERT_DIR = RESULTS_CS_DIR + "code-bert/"
+MODEL_BERT_NER = "google-bert/bert-base-cased"
+TOKENIZER_BERT = "google-bert/bert-base-cased"
+RESULTS_BERT_DIR = RESULTS_DIR + "bert/"
 
 LR_BERT = 8e-5
 TRAIN_BATCH_SIZE_BERT = 8
