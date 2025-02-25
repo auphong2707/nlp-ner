@@ -3,7 +3,7 @@ This file contains all the constants used in the project.
 """
 
 RESULTS_DIR = "./results/"
-LOGGING_STEPS = 547
+LOGGING_STEPS = 3
 SEED = 42
 
 # [1. CODE BERT HYPERPARAMETERS]
