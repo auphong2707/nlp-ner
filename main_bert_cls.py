@@ -12,7 +12,7 @@ wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Prepare the dataset and tokenizer
-train_dataset, val_dataset, test_dataset, label_list = prepare_dataset(TOKENIZER_BERT)
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT)
 
 # Define compute_metrics function
 metric = evaluate.load("seqeval")
@@ -20,8 +20,8 @@ metric = evaluate.load("seqeval")
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     
-    true_labels = [[label_list[l] for l in label if l != -100] for label in labels]
-    pred_labels = [[label_list[p] for p, l in zip(pred, label) if l != -100] for pred, label in zip(predictions, labels)]
+    true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in labels]
+    pred_labels = [[ID2LABEL[p] for p, l in zip(pred, label) if l != -100] for pred, label in zip(predictions, labels)]
     
     results = metric.compute(predictions=pred_labels, references=true_labels)
     
@@ -55,7 +55,7 @@ if checkpoint:
     model = BertForTokenClassification.from_pretrained(checkpoint)
 else:
     model = BertForTokenClassification.from_pretrained(MODEL_BERT_NER,
-                                                       num_labels=len(label_list),
+                                                       num_labels=len(ID2LABEL),
                                                        ignore_mismatched_sizes=True)
 
 # Create training arguments
