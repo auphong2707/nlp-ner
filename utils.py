@@ -96,6 +96,11 @@ def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoToke
     val_data = load_jsonl("data/val_en.jsonl")
     test_data = load_jsonl("data/test_en.jsonl")
 
+    # Randomly sample 20% of data
+    train_data = random.sample(train_data, int(0.2 * len(train_data)))
+    val_data = random.sample(val_data, int(0.2 * len(val_data)))
+    test_data = random.sample(test_data, int(0.2 * len(test_data)))
+
     # Convert data into a Dataset object
     train_dataset = Dataset.from_list(train_data)
     val_dataset = Dataset.from_list(val_data)
