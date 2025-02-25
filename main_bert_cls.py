@@ -19,9 +19,6 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
-    print(type(predictions))
-    for x in predictions:
-        print(x.shape)
     
     true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in labels]
     pred_labels = [[ID2LABEL[p] for p, l in zip(pred, label) if l != -100] for pred, label in zip(predictions, labels)]
@@ -92,7 +89,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=TOKENIZER_BERT,
-    preprocess_logits_for_metrics=(lambda logits, labels: (logits[0].argmax(dim=-1), labels)),
+    preprocess_logits_for_metrics=(lambda logits, labels: logits[0].argmax(dim=-1)),
     compute_metrics=compute_metrics,
 )
 
