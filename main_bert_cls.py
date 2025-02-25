@@ -96,7 +96,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=TOKENIZER_BERT,
-    preprocess_logits_for_metrics=(lambda logits, labels: logits[0].argmax(dim=-1)),
+    preprocess_logits_for_metrics=(lambda logits, labels: logits.argmax(dim=-1)),
     compute_metrics=compute_metrics,
 )
 
