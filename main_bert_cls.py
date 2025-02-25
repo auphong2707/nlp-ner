@@ -18,8 +18,7 @@ train_dataset, val_dataset, test_dataset, label_list = prepare_dataset(TOKENIZER
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = logits.argmax(axis=-1)
+    predictions, labels = eval_pred
     
     true_labels = [[label_list[l] for l in label if l != -100] for label in labels]
     pred_labels = [[label_list[p] for p, l in zip(pred, label) if l != -100] for pred, label in zip(predictions, labels)]
@@ -90,7 +89,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=TOKENIZER_BERT,
-    preprocess_logits_for_metrics=(lambda logits, labels: logits[0].argmax(dim=-1)),
+    preprocess_logits_for_metrics=(lambda logits, labels: (logits[0].argmax(dim=-1), labels)),
     compute_metrics=compute_metrics,
 )
 
