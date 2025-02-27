@@ -27,8 +27,8 @@ def compute_metrics(eval_pred):
         current_labels = []
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
-            # Filter out padding tokens (commonly set to -100)
-            if label != -100:
+            # Filter out padding tokens (commonly set to 31)
+            if label != 31:
                 # Convert numerical IDs to string labels using your mapping
                 current_labels.append(ID2LABEL[label])
                 current_preds.append(ID2LABEL[pred])
