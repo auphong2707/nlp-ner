@@ -94,7 +94,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
-    tokenizer=TOKENIZER_BERT,
+    tokenizer=tokenizer,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
@@ -111,7 +111,7 @@ test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 # [SAVING THINGS]
 # Save the model and tokenizer
 model.save_pretrained(EXPERIMENT_RESULTS_DIR)
-TOKENIZER_BERT.save_pretrained(EXPERIMENT_RESULTS_DIR)
+tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR)
 
 # Save the training arguments
 with open(EXPERIMENT_RESULTS_DIR + "/training_args.txt", "w") as f:
