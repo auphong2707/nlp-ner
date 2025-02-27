@@ -18,21 +18,26 @@ train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    predictions, labels = eval_pred
-    print(predictions.shape, labels.shape)
+    preds, labels = eval_pred
+    print(preds.shape, labels.shape)
+
+    true_labels = []
+    true_preds = []
+    for label_seq, pred_seq in zip(labels, preds):
+        current_labels = []
+        current_preds = []
+        for label, pred in zip(label_seq, pred_seq):
+            # Filter out padding tokens (commonly set to -100)
+            if label != -100:
+                # Convert numerical IDs to string labels using your mapping
+                current_labels.append(ID2LABEL[label])
+                current_preds.append(ID2LABEL[pred])
+        true_labels.append(current_labels)
+        true_preds.append(current_preds)
     
-    results = metric.compute(predictions=predictions, references=labels)
+    return metric.compute(predictions=true_labels, references=true_labels)
     
-    # Extract entity-level scores
-    precision = results["overall_precision"]
-    recall = results["overall_recall"]
-    f1 = results["overall_f1"]
     
-    return {
-        "precision": precision,
-        "recall": recall,
-        "f1": f1
-    }
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
 # Set experiment name
