@@ -19,18 +19,9 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
-
-    true_labels = []
-    # Convert the labels to the original format
-    for label in labels:
-        true_labels.append([ID2LABEL[l] for l in label if l != -100])
-
-    pred_labels = []
-    # Convert the predictions to the original format
-    for prediction in predictions:
-        pred_labels.append([ID2LABEL[l] for l in prediction if l != -100])
+    print(predictions.shape, labels.shape)
     
-    results = metric.compute(predictions=pred_labels, references=true_labels)
+    results = metric.compute(predictions=predictions, references=labels)
     
     # Extract entity-level scores
     precision = results["overall_precision"]
@@ -90,7 +81,6 @@ training_args = TrainingArguments(
 )
 
 def preprocess_logits_for_metrics(logits, labels):
-    print(logits.shape, labels.shape)
     return logits.argmax(dim=-1)
 
 # Create Trainer
