@@ -21,8 +21,8 @@ def compute_metrics(eval_pred):
     preds, labels = eval_pred
     print(preds.shape, labels.shape)
 
-    true_labels = []
-    true_preds = []
+    decoded_labels = []
+    decoded_preds = []
     for label_seq, pred_seq in zip(labels, preds):
         current_labels = []
         current_preds = []
@@ -32,11 +32,10 @@ def compute_metrics(eval_pred):
                 # Convert numerical IDs to string labels using your mapping
                 current_labels.append(ID2LABEL[label])
                 current_preds.append(ID2LABEL[pred])
-        true_labels.append(current_labels)
-        true_preds.append(current_preds)
+        decoded_labels.append(current_labels)
+        decoded_preds.append(current_preds)
     
-    return metric.compute(predictions=true_labels, references=true_labels)
-    
+    return metric.compute(predictions=decoded_preds, references=decoded_labels)
     
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
