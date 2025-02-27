@@ -123,7 +123,7 @@ with open(EXPERIMENT_RESULTS_DIR + "/test_results.txt", "w") as f:
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
     folder_path=RESULTS_BERT_DIR,
-    repo_id="auphong2707/bert-ner",
+    repo_id="auphong2707/nlp-ner",
     repo_type="model",
-    private=True
+    private=False
 )
