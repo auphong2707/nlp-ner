@@ -39,9 +39,7 @@ def compute_metrics(eval_pred):
     
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
-# Set experiment name
-EXPERIMENT_NAME = "bert-ner-experiment"
-EXPERIMENT_RESULTS_DIR = RESULTS_BERT_DIR + EXPERIMENT_NAME
+# Create experiment results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR, exist_ok=True)
 
 # Load model
