@@ -89,6 +89,10 @@ training_args = TrainingArguments(
     seed=SEED
 )
 
+def preprocess_logits_for_metrics(logits, labels):
+    print(logits.shape, labels.shape)
+    return logits.argmax(dim=-1)
+
 # Create Trainer
 trainer = Trainer(
     model=model,
@@ -96,7 +100,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=TOKENIZER_BERT,
-    preprocess_logits_for_metrics=(lambda logits, labels: logits.argmax(dim=-1)),
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
 
