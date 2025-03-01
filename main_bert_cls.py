@@ -70,6 +70,7 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=EVAL_BATCH_SIZE_BERT,
     num_train_epochs=NUM_TRAIN_EPOCHS_BERT,
     weight_decay=WEIGHT_DECAY_BERT,
+    learning_rate=LR_BERT, 
     output_dir=EXPERIMENT_RESULTS_DIR,
     logging_dir=EXPERIMENT_RESULTS_DIR + "/logs",
     logging_steps=LOGGING_STEPS,
