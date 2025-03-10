@@ -138,6 +138,25 @@ def prepare_dataset_t5(tokenizer_name):
     global TOKENIZER
     TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
 
+    # Load data and split it into 3 sets: train, validation, and test
+    if not os.path.exists("data"):
+        os.mkdir("data")
+
+    if not os.path.exists("data/train_en.jsonl") or not os.path.exists("data/val_en.jsonl") or not os.path.exists("data/test_en.jsonl"):
+        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="train/train_en.jsonl", repo_type="dataset", local_dir="data/")
+        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="val/val_en.jsonl", repo_type="dataset", local_dir="data/")
+        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="test/test_en.jsonl", repo_type="dataset", local_dir="data/")
+
+        shutil.rmtree(os.path.join("data", ".cache"))
+
+        for root, dirs, files in os.walk("data"):
+            for file in files:
+                shutil.move(os.path.join(root, file), "data")
+
+        for root, dirs, files in os.walk("data"):
+            for dir in dirs:
+                os.rmdir(os.path.join(root, dir))
+
     # Load datasets
     train_data = load_jsonl("data/train_en.jsonl")
     val_data = load_jsonl("data/val_en.jsonl")
