@@ -61,8 +61,8 @@ EVAL_STEPS_BERT = 1641
 SAVE_STEPS_BERT = 1641
 
 # [2. T5 CLASSIFICATION HYPERPARAMETERS]
-MODEL_T5 = "google/flan-t5-base"
-TOKENIZER_T5 = "google/flan-t5-base"
+MODEL_T5 = "google/flan-t5-small"
+TOKENIZER_T5 = "google/flan-t5-small"
 
 RESULTS_T5_DIR = "./results/t5-cls/"
 EXPERIMENT_NAME_T5 = "t5-cls-experiment"
