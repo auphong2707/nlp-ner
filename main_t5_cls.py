@@ -16,6 +16,10 @@ huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 # Prepare dataset and tokenizer for T5
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
 
+for sample in train_dataset:
+    print(f"Input length: {len(sample['input_ids'])}, Label length: {len(sample['labels'])}")
+    break
+
 # Define metric
 metric = evaluate.load("seqeval")
 
@@ -64,13 +68,13 @@ data_collator = DataCollatorForSeq2Seq(
 
 # Tạo DataLoader với collate_fn
 train_loader = DataLoader(
-    train_dataset, batch_size=2, shuffle=True, collate_fn=data_collator
+    train_dataset, batch_size=2, shuffle=True, collate_fn=lambda x: {key: torch.stack([torch.tensor(f[key]) for f in x]) for key in x[0]}
 )
 val_loader = DataLoader(
-    val_dataset, batch_size=2, shuffle=False, collate_fn=data_collator
+    val_dataset, batch_size=2, shuffle=False, collate_fn=lambda x: {key: torch.stack([torch.tensor(f[key]) for f in x]) for key in x[0]}
 )
 test_loader = DataLoader(
-    test_dataset, batch_size=2, shuffle=False, collate_fn=data_collator
+    test_dataset, batch_size=2, shuffle=False, collate_fn=lambda x: {key: torch.stack([torch.tensor(f[key]) for f in x]) for key in x[0]}
 )
 
 

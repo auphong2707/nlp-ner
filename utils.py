@@ -166,7 +166,10 @@ def prepare_dataset_t5(tokenizer_name):
 
     # Convert numeric labels to text labels
     def convert_labels(example):
-        example["ner_tags_text"] = " ".join([ID2LABEL[tag] for tag in example["ner_tags"]])
+        if not isinstance(example["ner_tags"], list):
+            return example  # Nếu không phải list, bỏ qua
+
+        example["ner_tags_text"] = " ".join([ID2LABEL.get(tag, "O") for tag in example["ner_tags"]])
         return example
 
     # Apply conversion
