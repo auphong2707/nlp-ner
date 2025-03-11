@@ -4,10 +4,7 @@ set_seed(SEED)
 
 import wandb, huggingface_hub, os
 import evaluate
-import torch
-from torch.utils.data import DataLoader
-from transformers import TrainingArguments, T5ForConditionalGeneration, AutoTokenizer, AdamW
-from transformers import DataCollatorForSeq2Seq
+from transformers import TrainingArguments, Trainer, T5ForConditionalGeneration, AutoTokenizer
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -16,32 +13,31 @@ huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 # Prepare dataset and tokenizer for T5
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
 
-for sample in train_dataset:
-    print(f"Input length: {len(sample['input_ids'])}, Label length: {len(sample['labels'])}")
-    break
-
 # Define metric
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
+
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
+    # Chuyển chuỗi thành danh sách token
     decoded_preds = [pred.strip().split() for pred in decoded_preds]
     decoded_labels = [label.strip().split() for label in decoded_labels]
 
+    # Loại bỏ "PAD" chỉ khi đánh giá (không làm trong quá trình huấn luyện)
     filtered_preds = [[token for token in pred if token != "PAD"] for pred in decoded_preds]
     filtered_labels = [[token for token in label if token != "PAD"] for label in decoded_labels]
 
     return metric.compute(predictions=filtered_preds, references=filtered_labels)
+
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5, exist_ok=True)
 
 # Load T5 model
 checkpoint = None
-
 def get_last_checkpoint(output_dir):
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
@@ -57,76 +53,60 @@ else:
     model = T5ForConditionalGeneration.from_pretrained(MODEL_T5)
     model.gradient_checkpointing_enable()
 
-model.to("cuda")
-
-# Thêm DataCollatorForSeq2Seq để đảm bảo padding đúng cách
-data_collator = DataCollatorForSeq2Seq(
-    tokenizer=tokenizer, 
-    model=model, 
-    padding=True  # Padding động dựa trên batch
+# Create Training Arguments
+training_args = TrainingArguments(
+    run_name=EXPERIMENT_NAME_T5,
+    report_to="wandb",
+    evaluation_strategy='steps',
+    save_strategy='steps',
+    eval_steps=EVAL_STEPS_T5,
+    save_steps=SAVE_STEPS_T5,
+    per_device_train_batch_size=TRAIN_BATCH_SIZE_T5,
+    per_device_eval_batch_size=EVAL_BATCH_SIZE_T5,
+    num_train_epochs=NUM_TRAIN_EPOCHS_T5,
+    weight_decay=WEIGHT_DECAY_T5,
+    learning_rate=LR_T5, 
+    output_dir=EXPERIMENT_RESULTS_DIR_T5,
+    logging_dir=EXPERIMENT_RESULTS_DIR_T5 + "/logs",
+    logging_steps=LOGGING_STEPS,
+    load_best_model_at_end=True,
+    metric_for_best_model="eval_overall_f1",
+    greater_is_better=True,
+    save_total_limit=2,
+    fp16=True,
+    seed=SEED
 )
 
-# Tạo DataLoader với collate_fn
-train_loader = DataLoader(
-    train_dataset, batch_size=2, shuffle=True, collate_fn=lambda x: {key: torch.stack([torch.tensor(f[key]) for f in x]) for key in x[0]}
+# Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=val_dataset,
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics,
 )
-val_loader = DataLoader(
-    val_dataset, batch_size=2, shuffle=False, collate_fn=lambda x: {key: torch.stack([torch.tensor(f[key]) for f in x]) for key in x[0]}
-)
-test_loader = DataLoader(
-    test_dataset, batch_size=2, shuffle=False, collate_fn=lambda x: {key: torch.stack([torch.tensor(f[key]) for f in x]) for key in x[0]}
-)
 
+# Train
+if checkpoint:
+    trainer.train(resume_from_checkpoint=checkpoint)
+else:
+    trainer.train()
 
-# Optimizer and Loss
-optimizer = AdamW(model.parameters(), lr=LR_T5)
-loss_fn = torch.nn.CrossEntropyLoss()
-
-# Training Loop
-def train(model, train_loader, optimizer):
-    model.train()
-    total_loss = 0
-    for batch in train_loader:
-        input_ids = batch["input_ids"].to("cuda")
-        attention_mask = batch["attention_mask"].to("cuda")
-        labels = batch["labels"].to("cuda")
-        
-        optimizer.zero_grad()
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        loss = outputs.loss
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-    return total_loss / len(train_loader)
-
-# Evaluation Loop
-def evaluate(model, val_loader):
-    model.eval()
-    total_loss = 0
-    with torch.no_grad():
-        for batch in val_loader:
-            input_ids = batch["input_ids"].to("cuda")
-            attention_mask = batch["attention_mask"].to("cuda")
-            labels = batch["labels"].to("cuda")
-            
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-            loss = outputs.loss
-            total_loss += loss.item()
-    return total_loss / len(val_loader)
-
-# Train Model
-for epoch in range(NUM_TRAIN_EPOCHS_T5):
-    train_loss = train(model, train_loader, optimizer)
-    val_loss = evaluate(model, val_loader)
-    print(f"Epoch {epoch+1}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}")
-
-# Evaluate on Test Set
-test_loss = evaluate(model, test_loader)
-print(f"Test Loss: {test_loss:.4f}")
+# Evaluate
+test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
 # Save model and tokenizer
 model.save_pretrained(EXPERIMENT_RESULTS_DIR_T5)
 tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_T5)
+
+# Save training arguments
+with open(EXPERIMENT_RESULTS_DIR_T5 + "/training_args.txt", "w") as f:
+    f.write(str(training_args))
+
+# Save test results
+with open(EXPERIMENT_RESULTS_DIR_T5 + "/test_results.txt", "w") as f:
+    f.write(str(test_results))
 
 # Upload to Hugging Face
 api = huggingface_hub.HfApi()
