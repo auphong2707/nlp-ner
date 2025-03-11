@@ -164,6 +164,11 @@ def prepare_dataset_t5(tokenizer_name):
     val_data = load_jsonl("data/val_en.jsonl")
     test_data = load_jsonl("data/test_en.jsonl")
 
+    # Reduce dataset size to 10%
+    train_data = train_data[: int(len(train_data) * 0.1)]
+    val_data = val_data[: int(len(val_data) * 0.1)]
+    test_data = test_data[: int(len(test_data) * 0.1)]
+
     # Convert numeric labels to text labels
     def convert_labels(example):
         example["ner_tags_text"] = " ".join([ID2LABEL[tag] for tag in example["ner_tags"]])
