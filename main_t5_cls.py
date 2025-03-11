@@ -7,6 +7,7 @@ import evaluate
 import torch
 from torch.utils.data import DataLoader
 from transformers import TrainingArguments, T5ForConditionalGeneration, AutoTokenizer, AdamW
+from transformers import DataCollatorForSeq2Seq
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -54,10 +55,24 @@ else:
 
 model.to("cuda")
 
-# Data Loaders
-train_loader = DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE_T5, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=EVAL_BATCH_SIZE_T5, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=EVAL_BATCH_SIZE_T5, shuffle=False)
+# Thêm DataCollatorForSeq2Seq để đảm bảo padding đúng cách
+data_collator = DataCollatorForSeq2Seq(
+    tokenizer=tokenizer, 
+    model=model, 
+    padding=True  # Padding động dựa trên batch
+)
+
+# Tạo DataLoader với collate_fn
+train_loader = DataLoader(
+    train_dataset, batch_size=2, shuffle=True, collate_fn=data_collator
+)
+val_loader = DataLoader(
+    val_dataset, batch_size=2, shuffle=False, collate_fn=data_collator
+)
+test_loader = DataLoader(
+    test_dataset, batch_size=2, shuffle=False, collate_fn=data_collator
+)
+
 
 # Optimizer and Loss
 optimizer = AdamW(model.parameters(), lr=LR_T5)
