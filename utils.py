@@ -120,15 +120,17 @@ def tokenize_t5(example):
     """
     # Tokenize input sentence (tokens)
     tokenized_inputs = TOKENIZER(
-        " ".join(example["tokens"]), truncation=True, padding="longest", max_length = 128
+        " ".join(example["tokens"]), truncation=True, padding="max_length", max_length=128
     )
     
-    # Tokenize output sequence (NER tags as text sequence)
     tokenized_labels = TOKENIZER(
-        example["ner_tags_text"], truncation=True, padding="longest", max_length = 64
+        example["ner_tags_text"], truncation=True, padding="max_length", max_length=64
     )
+
+    # Kiểm tra độ dài labels, nếu quá dài thì cắt bớt
+    if len(tokenized_labels["input_ids"]) > 64:
+        tokenized_labels["input_ids"] = tokenized_labels["input_ids"][:64]
     
-    # Assign labels
     tokenized_inputs["labels"] = tokenized_labels["input_ids"]
     
     return tokenized_inputs
