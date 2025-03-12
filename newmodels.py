@@ -24,9 +24,9 @@ class BERT_BiLSTM_CRF(BertPreTrainedModel):
         # CRF layer
         self.crf = CRF(config.num_labels, batch_first=True)
         
-    def forward(self, input_ids, token_type_ids=None, input_mask=None, labels=None):
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
         # Getting BERT embeddings
-        outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=input_mask)
+        outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
         sequence_output = outputs[0]
         
         # Applying BiLSTM if needed
@@ -39,15 +39,15 @@ class BERT_BiLSTM_CRF(BertPreTrainedModel):
         
         # If labels are provided, compute the loss using CRF
         if labels is not None:
-            loss = -self.crf(emissions, labels, mask=input_mask.byte())
+            loss = -self.crf(emissions, labels, mask=attention_mask.byte())  # Make sure the mask is passed correctly
             return loss
         
         # Return the predictions from CRF decoding
-        return self.crf.decode(emissions, input_mask.byte())
+        return self.crf.decode(emissions, attention_mask.byte())  # Pass attention_mask here
 
-    def predict(self, input_ids, token_type_ids=None, input_mask=None):
+    def predict(self, input_ids, token_type_ids=None, attention_mask=None):
         # Get predictions from CRF
-        outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=input_mask)
+        outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
         sequence_output = outputs[0]
         
         # If needed, apply BiLSTM
@@ -57,4 +57,4 @@ class BERT_BiLSTM_CRF(BertPreTrainedModel):
         sequence_output = self.dropout(sequence_output)
         emissions = self.hidden2tag(sequence_output)
         
-        return self.crf.decode(emissions, input_mask.byte())
+        return self.crf.decode(emissions, attention_mask.byte())  # Pass attention_mask here
