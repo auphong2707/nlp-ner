@@ -2,9 +2,11 @@ from constants import *
 from utils import set_seed, prepare_dataset_t5
 set_seed(SEED)
 
+import numpy as np
 import wandb, huggingface_hub, os
 import evaluate
 from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AutoTokenizer
+from transformers import DataCollatorForTokenClassification
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -12,13 +14,15 @@ huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Prepare dataset and tokenizer for T5
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
+data_collator = DataCollatorForTokenClassification(tokenizer)
 
 # Define metric
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)  # Chuyển logits thành nhãn dự đoán
+    logits = np.nan_to_num(logits)  
+    predictions = np.argmax(logits, axis=-1)
 
     # Bỏ qua special tokens (-100)
     true_predictions = [
@@ -31,6 +35,7 @@ def compute_metrics(eval_pred):
     ]
 
     return metric.compute(predictions=true_predictions, references=true_labels)
+
 
 
 # Create results directory
@@ -48,9 +53,9 @@ def get_last_checkpoint(output_dir):
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5)
 
 if checkpoint:
-    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=len(ID2LABEL))
+    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=len(ID2LABEL), ignore_index=-100)
 else:
-    model = T5ForTokenClassification.from_pretrained(MODEL_T5, num_labels=len(ID2LABEL))
+    model = T5ForTokenClassification.from_pretrained(MODEL_T5, num_labels=len(ID2LABEL), ignore_index=-100)
     model.gradient_checkpointing_enable()
 
 model.to("cuda")
@@ -82,6 +87,7 @@ trainer = Trainer(
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
+    data_collator=data_collator
 )
 
 # Train
