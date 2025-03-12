@@ -115,25 +115,25 @@ def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoToke
 
 # Tokenization and alignment for T5
 def tokenize_t5(example):
-    """
-    Tokenizes the input tokens and converts the NER tags into text format.
-    """
-    # Tokenize input sentence (tokens)
     tokenized_inputs = TOKENIZER(
-        " ".join(example["tokens"]), truncation=True, padding="max_length", max_length=128
-    )
-    
-    tokenized_labels = TOKENIZER(
-        example["ner_tags_text"], truncation=True, padding="max_length", max_length=64
+        example["tokens"],  # Không cần ghép chuỗi, giữ dạng danh sách token
+        truncation=True,
+        padding="max_length",
+        max_length=128,
+        is_split_into_words=True  # Đảm bảo giữ mapping giữa từ và token
     )
 
-    # Kiểm tra độ dài labels, nếu quá dài thì cắt bớt
-    if len(tokenized_labels["input_ids"]) > 64:
-        tokenized_labels["input_ids"] = tokenized_labels["input_ids"][:64]
-    
-    tokenized_inputs["labels"] = tokenized_labels["input_ids"]
-    
+    # Gán nhãn theo tokenized sequence
+    labels = [-100] * len(tokenized_inputs["input_ids"])  # Mặc định -100 để bỏ qua special tokens
+    word_ids = tokenized_inputs.word_ids()  # Map token với từ ban đầu
+
+    for i, word_id in enumerate(word_ids):
+        if word_id is not None:  # Bỏ qua special tokens
+            labels[i] = example["ner_tags"][word_id]
+
+    tokenized_inputs["labels"] = labels
     return tokenized_inputs
+
 
 # Prepare dataset for T5
 def prepare_dataset_t5(tokenizer_name):
@@ -159,33 +159,17 @@ def prepare_dataset_t5(tokenizer_name):
             for dir in dirs:
                 os.rmdir(os.path.join(root, dir))
 
-    # Load datasets
     train_data = load_jsonl("data/train_en.jsonl")
     val_data = load_jsonl("data/val_en.jsonl")
     test_data = load_jsonl("data/test_en.jsonl")
 
-    # Convert numeric labels to text labels
-    def convert_labels(example):
-        if not isinstance(example["ner_tags"], list):
-            return example  # Nếu không phải list, bỏ qua
-
-        example["ner_tags_text"] = " ".join([ID2LABEL.get(tag, "O") for tag in example["ner_tags"]])
-        return example
-
-    # Apply conversion
-    train_data = [convert_labels(ex) for ex in train_data]
-    val_data = [convert_labels(ex) for ex in val_data]
-    test_data = [convert_labels(ex) for ex in test_data]
-
-    # Convert to Hugging Face Dataset
     train_dataset = Dataset.from_list(train_data)
     val_dataset = Dataset.from_list(val_data)
     test_dataset = Dataset.from_list(test_data)
 
-    # Tokenization
-    train_dataset = train_dataset.map(tokenize_t5, batched=False)
-    val_dataset = val_dataset.map(tokenize_t5, batched=False)
-    test_dataset = test_dataset.map(tokenize_t5, batched=False)
+    train_dataset = train_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"])
+    val_dataset = val_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"])
+    test_dataset = test_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"])
 
     return train_dataset, val_dataset, test_dataset, TOKENIZER
 
