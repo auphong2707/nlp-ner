@@ -17,20 +17,20 @@ train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZ
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    preds, labels = eval_pred
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)  # Chuyển logits thành nhãn dự đoán
 
-    decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+    # Bỏ qua special tokens (-100)
+    true_predictions = [
+        [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+    true_labels = [
+        [ID2LABEL[l] for l in label if l != -100]
+        for label in labels
+    ]
 
-    # Chuyển chuỗi thành danh sách token
-    decoded_preds = [pred.strip().split() for pred in decoded_preds]
-    decoded_labels = [label.strip().split() for label in decoded_labels]
-
-    # Loại bỏ "PAD" chỉ khi đánh giá (không làm trong quá trình huấn luyện)
-    filtered_preds = [[token for token in pred if token != "PAD"] for pred in decoded_preds]
-    filtered_labels = [[token for token in label if token != "PAD"] for label in decoded_labels]
-
-    return metric.compute(predictions=filtered_preds, references=filtered_labels)
+    return metric.compute(predictions=true_predictions, references=true_labels)
 
 
 # Create results directory
@@ -48,17 +48,17 @@ def get_last_checkpoint(output_dir):
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5)
 
 if checkpoint:
-    model = T5ForTokenClassification.from_pretrained(checkpoint)
+    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=len(ID2LABEL))
 else:
-    model = T5ForTokenClassification.from_pretrained(MODEL_T5)
+    model = T5ForTokenClassification.from_pretrained(MODEL_T5, num_labels=len(ID2LABEL))
     model.gradient_checkpointing_enable()
+
+model.to("cuda")
 
 # Create Training Arguments
 training_args = TrainingArguments(
-    run_name=EXPERIMENT_NAME_T5,
-    report_to="wandb",
-    evaluation_strategy='steps',
-    save_strategy='steps',
+    evaluation_strategy="steps",
+    save_strategy="steps",
     eval_steps=EVAL_STEPS_T5,
     save_steps=SAVE_STEPS_T5,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5,
@@ -69,12 +69,9 @@ training_args = TrainingArguments(
     output_dir=EXPERIMENT_RESULTS_DIR_T5,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5 + "/logs",
     logging_steps=LOGGING_STEPS,
-    load_best_model_at_end=True,
-    metric_for_best_model="eval_overall_f1",
-    greater_is_better=True,
     save_total_limit=2,
     fp16=True,
-    seed=SEED
+    seed=SEED,
 )
 
 # Trainer
