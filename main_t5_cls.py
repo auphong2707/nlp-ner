@@ -4,7 +4,7 @@ set_seed(SEED)
 
 import wandb, huggingface_hub, os
 import evaluate
-from transformers import TrainingArguments, Trainer, T5ForConditionalGeneration, AutoTokenizer
+from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AutoTokenizer
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -48,9 +48,9 @@ def get_last_checkpoint(output_dir):
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5)
 
 if checkpoint:
-    model = T5ForConditionalGeneration.from_pretrained(checkpoint)
+    model = T5ForTokenClassification.from_pretrained(checkpoint)
 else:
-    model = T5ForConditionalGeneration.from_pretrained(MODEL_T5)
+    model = T5ForTokenClassification.from_pretrained(MODEL_T5)
     model.gradient_checkpointing_enable()
 
 # Create Training Arguments
