@@ -64,8 +64,8 @@ SAVE_STEPS_BERT = 1641
 MODEL_T5 = "google/flan-t5-small"
 TOKENIZER_T5 = "google/flan-t5-small"
 
-RESULTS_T5_DIR = "./results/t5-cls/"
-EXPERIMENT_NAME_T5 = "t5-cls-experiment"
+RESULTS_T5_DIR = RESULTS_DIR + "t5-cls/"
+EXPERIMENT_NAME_T5 = "t5-cls-experiment-1"
 EXPERIMENT_RESULTS_DIR_T5 = RESULTS_T5_DIR + EXPERIMENT_NAME_T5
 
 LR_T5 = 3e-5
