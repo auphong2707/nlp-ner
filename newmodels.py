@@ -45,6 +45,7 @@ class BERT_BiLSTM_CRF(BertPreTrainedModel):
         # Return the predictions from CRF decoding
         return self.crf.decode(emissions, attention_mask.byte())  # Pass attention_mask here
 
+
     def predict(self, input_ids, token_type_ids=None, attention_mask=None):
         # Get predictions from CRF
         outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)

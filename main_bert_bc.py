@@ -4,6 +4,7 @@ from newmodels import BERT_BiLSTM_CRF
 import wandb, huggingface_hub, os
 import evaluate
 from transformers import TrainingArguments, Trainer, AutoTokenizer
+from torch.nn.utils import clip_grad_norm_
 
 # Set random seed for reproducibility
 set_seed(SEED)
@@ -79,7 +80,7 @@ trainer = Trainer(
     compute_metrics=compute_metrics,
 )
 
-# Training loop
+# Training loop (trainer.train() already handles this)
 trainer.train()
 
 # Evaluation
