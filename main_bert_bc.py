@@ -27,13 +27,21 @@ train_loader = DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE_BERT_BC, sh
 val_loader = DataLoader(val_dataset, batch_size=EVAL_BATCH_SIZE_BERT_BC, shuffle=False, collate_fn=collate_fn)
 test_loader = DataLoader(test_dataset, batch_size=EVAL_BATCH_SIZE_BERT_BC, shuffle=False, collate_fn=collate_fn)
 
+
+
+
 # Load checkpoint if available
 def get_last_checkpoint(output_dir):
+    if not os.path.exists(output_dir):
+        return None  # Không có checkpoint nếu thư mục chưa tồn tại
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
         last_checkpoint = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))[-1]
         return os.path.join(output_dir, last_checkpoint)
     return None
+
+# Tạo thư mục lưu kết quả nếu chưa có
+os.makedirs(EXPERIMENT_RESULTS_BBC_DIR, exist_ok=True)
 
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BBC_DIR)
 if checkpoint:
