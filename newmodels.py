@@ -1,61 +1,48 @@
 import torch
 import torch.nn as nn
+from transformers import BertModel
 from torchcrf import CRF
-from transformers import BertModel, BertPreTrainedModel
 
-class BERT_BiLSTM_CRF(BertPreTrainedModel):
-    def __init__(self, config, rnn_dim=128, need_birnn=False):
-        super(BERT_BiLSTM_CRF, self).__init__(config)
+class BERT_BiLSTM_CRF(nn.Module):
+    def __init__(self, bert_model_name, num_labels, hidden_dim=256, dropout=0.3):
+        super(BERT_BiLSTM_CRF, self).__init__()
         
-        # BERT Model
-        self.bert = BertModel(config)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        out_dim = config.hidden_size
+        # Load pre-trained BERT model
+        self.bert = BertModel.from_pretrained(bert_model_name)
+        self.hidden_dim = hidden_dim
+        self.num_labels = num_labels
         
-        # BiLSTM layer (if needed)
-        self.need_birnn = need_birnn
-        if need_birnn:
-            self.birnn = nn.LSTM(config.hidden_size, rnn_dim, num_layers=1, bidirectional=True, batch_first=True)
-            out_dim = rnn_dim * 2  # Because it's bidirectional
+        # BiLSTM layer
+        self.lstm = nn.LSTM(
+            input_size=self.bert.config.hidden_size,
+            hidden_size=hidden_dim,
+            num_layers=1,
+            bidirectional=True,
+            batch_first=True
+        )
         
-        # Linear layer for token classification
-        self.hidden2tag = nn.Linear(out_dim, config.num_labels)
+        # Fully connected layer
+        self.fc = nn.Linear(hidden_dim * 2, num_labels)
         
         # CRF layer
-        self.crf = CRF(config.num_labels, batch_first=True)
+        self.crf = CRF(num_labels, batch_first=True)
         
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
-        # Getting BERT embeddings
-        outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
-        sequence_output = outputs[0]
+        # Dropout layer
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, input_ids, attention_mask, labels=None):
+        bert_outputs = self.bert(input_ids, attention_mask=attention_mask)
+        sequence_output = bert_outputs.last_hidden_state  # Shape: (batch_size, seq_len, hidden_dim)
         
-        # Applying BiLSTM if needed
-        if self.need_birnn:
-            sequence_output, _ = self.birnn(sequence_output)
+        # Pass through BiLSTM
+        lstm_output, _ = self.lstm(sequence_output)  # Shape: (batch_size, seq_len, hidden_dim * 2)
         
-        # Apply dropout and linear layer
-        sequence_output = self.dropout(sequence_output)
-        emissions = self.hidden2tag(sequence_output)
+        # Fully connected layer
+        emissions = self.fc(self.dropout(lstm_output))  # Shape: (batch_size, seq_len, num_labels)
         
-        # If labels are provided, compute the loss using CRF
         if labels is not None:
-            loss = -self.crf(emissions, labels, mask=attention_mask.byte())  # Make sure the mask is passed correctly
+            loss = -self.crf(emissions, labels, mask=attention_mask.byte(), reduction='mean')
             return loss
-        
-        # Return the predictions from CRF decoding
-        return self.crf.decode(emissions, attention_mask.byte())  # Pass attention_mask here
-
-
-    def predict(self, input_ids, token_type_ids=None, attention_mask=None):
-        # Get predictions from CRF
-        outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
-        sequence_output = outputs[0]
-        
-        # If needed, apply BiLSTM
-        if self.need_birnn:
-            sequence_output, _ = self.birnn(sequence_output)
-        
-        sequence_output = self.dropout(sequence_output)
-        emissions = self.hidden2tag(sequence_output)
-        
-        return self.crf.decode(emissions, attention_mask.byte())  # Pass attention_mask here
+        else:
+            predictions = self.crf.decode(emissions, mask=attention_mask.byte())
+            return predictions

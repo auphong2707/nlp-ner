@@ -1,45 +1,48 @@
-from constants import *
+import os
+import torch
+from transformers import AutoTokenizer
+from torch.utils.data import DataLoader
 from utils import set_seed, prepare_dataset
 from newmodels import BERT_BiLSTM_CRF
-import wandb, huggingface_hub, os
-import evaluate
-from transformers import TrainingArguments, Trainer, AutoTokenizer
-from torch.nn.utils import clip_grad_norm_
+from constants import *
+import wandb, huggingface_hub, evaluate
+from transformers import TrainingArguments, Trainer
 
-# Set random seed for reproducibility
+# Set seed for reproducibility
 set_seed(SEED)
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
-# Prepare the dataset and tokenizer
+def collate_fn(batch):
+    input_ids = torch.tensor([item['input_ids'] for item in batch], dtype=torch.long)
+    attention_mask = torch.tensor([item['attention_mask'] for item in batch], dtype=torch.long)
+    labels = torch.tensor([item['labels'] for item in batch], dtype=torch.long)
+    return input_ids, attention_mask, labels
+
+# Load dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_BC)
+train_loader = DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE_BERT_BC, shuffle=True, collate_fn=collate_fn)
+val_loader = DataLoader(val_dataset, batch_size=EVAL_BATCH_SIZE_BERT_BC, shuffle=False, collate_fn=collate_fn)
+test_loader = DataLoader(test_dataset, batch_size=EVAL_BATCH_SIZE_BERT_BC, shuffle=False, collate_fn=collate_fn)
 
-# Define compute_metrics function
-metric = evaluate.load("seqeval")
+# Load checkpoint if available
+def get_last_checkpoint(output_dir):
+    checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
+    if checkpoints:
+        last_checkpoint = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))[-1]
+        return os.path.join(output_dir, last_checkpoint)
+    return None
 
-def compute_metrics(eval_pred):
-    preds, labels = eval_pred
-    decoded_labels = []
-    decoded_preds = []
-    for label_seq, pred_seq in zip(labels, preds):
-        current_labels = []
-        current_preds = []
-        for label, pred in zip(label_seq, pred_seq):
-            if label != 31:  # 31 is for padding
-                current_labels.append(ID2LABEL[label])
-                current_preds.append(ID2LABEL[pred])
-        decoded_labels.append(current_labels)
-        decoded_preds.append(current_preds)
-    
-    return metric.compute(predictions=decoded_preds, references=decoded_labels)
+checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BBC_DIR)
+if checkpoint:
+    model = BERT_BiLSTM_CRF.from_pretrained(checkpoint)
+else:
+    model = BERT_BiLSTM_CRF(MODEL_BERT_BC, num_labels=len(ID2LABEL))
 
-# Setup results directory
-os.makedirs(EXPERIMENT_RESULTS_BBC_DIR, exist_ok=True)
-
-# Load model
-model = BERT_BiLSTM_CRF.from_pretrained(MODEL_BERT_BC, num_labels=len(ID2LABEL), ignore_mismatched_sizes=True)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 # Setup Training Arguments
 training_args = TrainingArguments(
@@ -66,9 +69,30 @@ training_args = TrainingArguments(
     max_grad_norm=5.0
 )
 
-# Define the preprocess function for logits
-def preprocess_logits_for_metrics(logits, labels):
-    return logits.argmax(dim=-1)
+# Define compute_metrics function
+metric = evaluate.load("seqeval")
+
+def compute_metrics(eval_pred):
+    preds, labels = eval_pred
+    decoded_labels = []
+    decoded_preds = []
+    
+    if isinstance(preds, list):
+        predictions = preds
+    else:
+        predictions = preds.argmax(dim=-1)
+    
+    for label_seq, pred_seq in zip(labels, predictions):
+        current_labels = []
+        current_preds = []
+        for label, pred in zip(label_seq, pred_seq):
+            if label != 31:  # 31 là token padding
+                current_labels.append(ID2LABEL[label])
+                current_preds.append(ID2LABEL[pred])
+        decoded_labels.append(current_labels)
+        decoded_preds.append(current_preds)
+    
+    return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
 # Create Trainer instance
 trainer = Trainer(
@@ -77,7 +101,6 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
-    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
 
