@@ -74,7 +74,7 @@ training_args = TrainingArguments(
     save_total_limit=2,
     fp16=True,
     seed=SEED,
-    max_grad_norm=5.0
+    max_grad_norm=1.0
 )
 
 # Define compute_metrics function
