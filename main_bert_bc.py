@@ -63,7 +63,7 @@ training_args = TrainingArguments(
     save_total_limit=2,
     fp16=False,
     seed=SEED,
-    max_grad_norm=1.0
+    max_grad_norm=0.5
 )
 
 # Define the preprocess function for logits
