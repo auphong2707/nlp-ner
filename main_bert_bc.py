@@ -67,7 +67,7 @@ training_args = TrainingArguments(
     logging_dir=EXPERIMENT_RESULTS_BBC_DIR + "/logs",
     logging_steps=LOGGING_STEPS,
     load_best_model_at_end=True,
-    metric_for_best_model="eval_overall_f1",
+    metric_for_best_model="eval_f1",
     greater_is_better=True,
     save_total_limit=2,
     fp16=True,
@@ -113,7 +113,7 @@ def compute_metrics(eval_pred):
     
     if not decoded_preds or not decoded_labels:
         print("Warning: No valid predictions or labels found!")
-        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+        return {"eval_precision": 0.0, "eval_recall": 0.0, "eval_f1": 0.0}
     
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
