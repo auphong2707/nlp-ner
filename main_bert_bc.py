@@ -7,6 +7,7 @@ from newmodels import BERT_BiLSTM_CRF
 from constants import *
 import wandb, huggingface_hub, evaluate
 from transformers import TrainingArguments, Trainer
+import numpy as np
 
 # Set seed for reproducibility
 set_seed(SEED)
