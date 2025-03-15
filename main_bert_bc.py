@@ -83,22 +83,32 @@ metric = evaluate.load("seqeval")
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
 
+    # Chuyển preds về danh sách nếu là numpy array đơn lẻ
+    if isinstance(preds, np.ndarray):
+        preds = preds.tolist()
+    if isinstance(labels, np.ndarray):
+        labels = labels.tolist()
+
     decoded_labels = []
     decoded_preds = []
 
     for label_seq, pred_seq in zip(labels, preds):
+        if isinstance(label_seq, float) or isinstance(pred_seq, float):
+            continue  # Bỏ qua các giá trị không hợp lệ
+
         current_labels = []
         current_preds = []
 
         for label, pred in zip(label_seq, pred_seq):
             if label != 31:  # 31 là token padding, cần bỏ qua
-                current_labels.append(ID2LABEL[label])
-                current_preds.append(ID2LABEL[pred])
+                current_labels.append(ID2LABEL.get(label, "O"))
+                current_preds.append(ID2LABEL.get(pred, "O"))
 
         decoded_labels.append(current_labels)
         decoded_preds.append(current_preds)
     
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
+
 
 
 # Create Trainer instance
