@@ -91,22 +91,29 @@ def compute_metrics(eval_pred):
     decoded_preds = []
 
     for label_seq, pred_seq in zip(labels, preds):
-        if isinstance(label_seq, float) or isinstance(pred_seq, float):
-            continue  # Skip invalid values
+        if not isinstance(label_seq, list) or not isinstance(pred_seq, list):
+            continue  # Skip invalid sequences
 
         current_labels = []
         current_preds = []
 
         for label, pred in zip(label_seq, pred_seq):
+            if isinstance(label, (float, np.float32)) or isinstance(pred, (float, np.float32)):
+                continue  # Skip invalid values
             if label != 31:  # Ignore padding token
                 current_labels.append(ID2LABEL.get(label, "O"))
                 current_preds.append(ID2LABEL.get(pred, "O"))
 
-        decoded_labels.append(current_labels)
-        decoded_preds.append(current_preds)
-        
+        if current_labels and current_preds:  # Ensure non-empty sequences
+            decoded_labels.append(current_labels)
+            decoded_preds.append(current_preds)
+    
     print("Final decoded_preds sample:", decoded_preds[:5])
     print("Final decoded_labels sample:", decoded_labels[:5])
+    
+    if not decoded_preds or not decoded_labels:
+        print("Warning: No valid predictions or labels found!")
+        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
     
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
