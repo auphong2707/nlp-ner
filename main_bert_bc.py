@@ -82,25 +82,24 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
+
     decoded_labels = []
     decoded_preds = []
-    
-    if isinstance(preds, list):
-        predictions = preds
-    else:
-        predictions = preds.argmax(dim=-1)
-    
-    for label_seq, pred_seq in zip(labels, predictions):
+
+    for label_seq, pred_seq in zip(labels, preds):
         current_labels = []
         current_preds = []
+
         for label, pred in zip(label_seq, pred_seq):
-            if label != 31:  # 31 là token padding
+            if label != 31:  # 31 là token padding, cần bỏ qua
                 current_labels.append(ID2LABEL[label])
                 current_preds.append(ID2LABEL[pred])
+
         decoded_labels.append(current_labels)
         decoded_preds.append(current_preds)
     
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
+
 
 # Create Trainer instance
 trainer = Trainer(
