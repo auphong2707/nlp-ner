@@ -1,5 +1,6 @@
 import os
 import torch
+import numpy as np
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 from utils import set_seed, prepare_dataset
@@ -7,7 +8,6 @@ from newmodels import BERT_BiLSTM_CRF
 from constants import *
 import wandb, huggingface_hub, evaluate
 from transformers import TrainingArguments, Trainer
-import numpy as np
 
 # Set seed for reproducibility
 set_seed(SEED)
@@ -28,20 +28,17 @@ train_loader = DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE_BERT_BC, sh
 val_loader = DataLoader(val_dataset, batch_size=EVAL_BATCH_SIZE_BERT_BC, shuffle=False, collate_fn=collate_fn)
 test_loader = DataLoader(test_dataset, batch_size=EVAL_BATCH_SIZE_BERT_BC, shuffle=False, collate_fn=collate_fn)
 
-
-
-
 # Load checkpoint if available
 def get_last_checkpoint(output_dir):
     if not os.path.exists(output_dir):
-        return None  # Không có checkpoint nếu thư mục chưa tồn tại
+        return None  # No checkpoint if directory does not exist
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
         last_checkpoint = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))[-1]
         return os.path.join(output_dir, last_checkpoint)
     return None
 
-# Tạo thư mục lưu kết quả nếu chưa có
+# Create results directory if not exists
 os.makedirs(EXPERIMENT_RESULTS_BBC_DIR, exist_ok=True)
 
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BBC_DIR)
@@ -84,7 +81,7 @@ metric = evaluate.load("seqeval")
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
 
-    # Chuyển preds về danh sách nếu là numpy array đơn lẻ
+    # Convert preds and labels to lists if numpy arrays
     if isinstance(preds, np.ndarray):
         preds = preds.tolist()
     if isinstance(labels, np.ndarray):
@@ -95,22 +92,23 @@ def compute_metrics(eval_pred):
 
     for label_seq, pred_seq in zip(labels, preds):
         if isinstance(label_seq, float) or isinstance(pred_seq, float):
-            continue  # Bỏ qua các giá trị không hợp lệ
+            continue  # Skip invalid values
 
         current_labels = []
         current_preds = []
 
         for label, pred in zip(label_seq, pred_seq):
-            if label != 31:  # 31 là token padding, cần bỏ qua
+            if label != 31:  # Ignore padding token
                 current_labels.append(ID2LABEL.get(label, "O"))
                 current_preds.append(ID2LABEL.get(pred, "O"))
 
         decoded_labels.append(current_labels)
         decoded_preds.append(current_preds)
+        
+    print("Final decoded_preds sample:", decoded_preds[:5])
+    print("Final decoded_labels sample:", decoded_labels[:5])
     
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
-
-
 
 # Create Trainer instance
 trainer = Trainer(
@@ -122,7 +120,7 @@ trainer = Trainer(
     compute_metrics=compute_metrics,
 )
 
-# Training loop (trainer.train() already handles this)
+# Training loop
 trainer.train()
 
 # Evaluation
@@ -132,7 +130,7 @@ test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 model.save_pretrained(EXPERIMENT_RESULTS_BBC_DIR)
 tokenizer.save_pretrained(EXPERIMENT_RESULTS_BBC_DIR)
 
-# Save the training arguments and test results
+# Save training arguments and test results
 with open(EXPERIMENT_RESULTS_BBC_DIR + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
