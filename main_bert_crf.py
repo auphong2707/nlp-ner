@@ -16,8 +16,8 @@ if __name__ == '__main__':
 
     "[PREPARING DATASET AND FUNCTIONS]"
     # Login to wandb & Hugging Face
-    # wandb.login(key=os.getenv("WANDB_API_KEY"))
-    # huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
+    wandb.login(key=os.getenv("WANDB_API_KEY"))
+    huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
     # Load dataset and tokenizer
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CRF)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # Setup Training Arguments
     training_args = TrainingArguments(
         run_name=EXPERIMENT_NAME_BERT_CRF,
-        # report_to="wandb",
+        report_to="wandb",
         eval_strategy='steps',
         save_strategy='steps',
         eval_steps=EVAL_STEPS_BERT_CRF,
@@ -154,11 +154,11 @@ if __name__ == '__main__':
     with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/test_results.txt", "w") as f:
         f.write(str(test_results))
 
-    # # Upload to Hugging Face
-    # api = huggingface_hub.HfApi()
-    # api.upload_large_folder(
-    #     folder_path=RESULTS_BERT_CRF_DIR,
-    #     repo_id="auphong2707/nlp-ner",
-    #     repo_type="model",
-    #     private=False
-    # )
+    # Upload to Hugging Face
+    api = huggingface_hub.HfApi()
+    api.upload_large_folder(
+        folder_path=RESULTS_BERT_CRF_DIR,
+        repo_id="auphong2707/nlp-ner",
+        repo_type="model",
+        private=False
+    )
