@@ -121,8 +121,7 @@ if __name__ == '__main__':
     )
 
     def preprocess_logits_for_metrics(logits, labels):
-        print(logits)
-        exit(0)
+        print(f"shape of logits: {logits.shape}")
         return logits.argmax(dim=-1)
 
     # Create Trainer instance
