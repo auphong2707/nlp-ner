@@ -18,7 +18,7 @@ class Bert_CRF(BertPreTrainedModel):
         self.fc = nn.Linear(self.bert.config.hidden_size,self.num_labels)
 
         #CRF layer
-        self.crf = CRF(self.num_labels, batch_first = True)
+        self.crf = CRF(self.num_labels)
     
     def forward(self,input_ids, attention_mask, labels = None):
         #lấy đầu ra từ bert
