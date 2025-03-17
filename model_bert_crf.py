@@ -31,7 +31,7 @@ class Bert_CRF(BertPreTrainedModel):
 
         #nếu có nhãn(trainning), tính loss
         if labels is not None:
-            loss = -self.crf(logits,labels,mask = attention_mask.bool(),reduction='mean')
+            loss = -self.crf(logits,labels,mask = attention_mask.bool())
             return loss
         #nếu không có nhãn (inference), dự đoán chuỗi nhãn
         else:
