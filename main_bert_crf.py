@@ -26,46 +26,74 @@ if __name__ == '__main__':
     # Define compute_metrics function
     metric = evaluate.load("seqeval")
 
-    def compute_metrics(eval_pred):
-        preds, labels = eval_pred
-        print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
-        # print(pred)
-        # Convert preds and labels to lists if numpy arrays
-        if isinstance(preds, np.ndarray):
-            preds = preds.tolist()
-        if isinstance(labels,np.ndarray):
-            labels = labels.tolist()
+    # def compute_metrics(eval_pred):
+    #     preds, labels = eval_pred
+    #     print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
+    #     # print(pred)
+    #     # Convert preds and labels to lists if numpy arrays
+    #     if isinstance(preds, np.ndarray):
+    #         preds = preds.tolist()
+    #     if isinstance(labels,np.ndarray):
+    #         labels = labels.tolist()
 
+    #     decoded_labels = []
+    #     decoded_preds = []
+
+    #     for label_seq, pred_seq in zip(labels, preds):
+    #         # if not isinstance(label_seq, list) or not isinstance(pred_seq, list):
+    #         #     continue
+            
+    #         current_labels = []
+    #         current_preds = []
+
+    #         for label, pred in zip(label_seq, pred_seq):
+    #             # if isinstance(label, (float, np.float32)) or isinstance(pred, (float,np.float32)):
+    #             #     continue
+    #             if label!=31:
+    #                 current_labels.append(ID2LABEL.get(label,"0"))
+    #                 current_preds.append(ID2LABEL.get(pred,"0"))
+            
+    #         if current_labels and current_preds:
+    #             decoded_labels.append(current_labels)
+    #             decoded_preds.append(current_preds)
+
+    #     print("Final decoded_preds sample:", decoded_preds[:5])
+    #     print("Final decoded_labels sample:", decoded_labels[:5])
+
+    #     if not decoded_preds or not decoded_labels:
+    #         print("Warning: No valid predictions or labels found!")
+    #         return {"eval_precision": 0.0, "eval_recall": 0.0, "eval_f1": 0.0}
+        
+    #     return metric.compute(predictions=decoded_preds,references=decoded_labels)
+
+    def compute_metrics(eval_pred):
+        preds, labels = eval_pred  # preds and labels are now tensors
+        
+        # Convert tensors to lists
+        preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
+        labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
+        
         decoded_labels = []
         decoded_preds = []
 
         for label_seq, pred_seq in zip(labels, preds):
-            # if not isinstance(label_seq, list) or not isinstance(pred_seq, list):
-            #     continue
-            
             current_labels = []
             current_preds = []
 
             for label, pred in zip(label_seq, pred_seq):
-                # if isinstance(label, (float, np.float32)) or isinstance(pred, (float,np.float32)):
-                #     continue
-                if label!=31:
-                    current_labels.append(ID2LABEL.get(label,"0"))
-                    current_preds.append(ID2LABEL.get(pred,"0"))
+                if label != -100:  # Ignore padding/ignored indices
+                    current_labels.append(ID2LABEL.get(label, "O"))
+                    current_preds.append(ID2LABEL.get(pred, "O"))
             
             if current_labels and current_preds:
                 decoded_labels.append(current_labels)
                 decoded_preds.append(current_preds)
 
-        print("Final decoded_preds sample:", decoded_preds[:5])
-        print("Final decoded_labels sample:", decoded_labels[:5])
-
         if not decoded_preds or not decoded_labels:
             print("Warning: No valid predictions or labels found!")
-            return {"eval_precision": 0.0, "eval_recall": 0.0, "eval_f1": 0.0}
+            return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
         
-        return metric.compute(predictions=decoded_preds,references=decoded_labels)
-
+        return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
     "[SETTING UP MODEL AND TRAINING ARGUMENTS]"
     # Create results directory if not exists
@@ -120,10 +148,23 @@ if __name__ == '__main__':
         dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
     )
 
+    # def preprocess_logits_for_metrics(model_output, labels):
+    #     logits = model_output["logits"]
+    #     return logits.argmax(dim=-1)
     def preprocess_logits_for_metrics(model_output, labels):
-        logits = model_output["logits"]
-        return logits.argmax(dim=-1)
-
+        # Extract logits and predictions from model output
+        logits = model_output["logits"]  # Shape: [batch_size, seq_len, num_labels]
+        predictions = model_output["predictions"]  # List of lists from CRF
+        
+        # Convert CRF predictions (list of lists) to a tensor
+        max_seq_len = logits.size(1)  # Get sequence length from logits
+        pred_tensor = torch.full((logits.size(0), max_seq_len), -100, dtype=torch.long, device=logits.device)
+        
+        for i, pred_seq in enumerate(predictions):
+            valid_len = min(len(pred_seq), max_seq_len)
+            pred_tensor[i, :valid_len] = torch.tensor(pred_seq[:valid_len], dtype=torch.long, device=logits.device)
+        
+        return pred_tensor  # Shape: [batch_size, seq_len]
     # Create Trainer instance
     trainer = Trainer(
         model=model,
@@ -142,7 +183,6 @@ if __name__ == '__main__':
         trainer.train()
 
     "[EVALUATING]"
-    # Evaluation
     test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
     "[SAVING THINGS]"
