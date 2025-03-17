@@ -4,7 +4,7 @@ from TorchCRF import CRF
 from transformers import BertModel, BertPreTrainedModel
 
 class Bert_CRF(BertPreTrainedModel):
-    def __init__(self, bert_model_name, num_labels, hidden_dim, dropout=0.3):
+    def __init__(self, bert_model_name, num_labels, hidden_dim=256, dropout=0.3):
         super().__init__()
 
         #Bert model
