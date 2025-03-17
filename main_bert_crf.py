@@ -3,7 +3,6 @@ import os
 import numpy as np
 import torch
 from transformers import AutoTokenizer
-from torch.utils.data import DataLoader
 import wandb, huggingface_hub, evaluate
 from transformers import TrainingArguments, Trainer
 
@@ -15,8 +14,8 @@ set_seed(SEED)
 
 "[PREPARING DATASET AND FUNCTIONS]"
 # Login to wandb & Hugging Face
-wandb.login(key=os.getenv("WANDB_API_KEY"))
-huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
+# wandb.login(key=os.getenv("WANDB_API_KEY"))
+# huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Load dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CRF)
@@ -92,7 +91,7 @@ model.to(device)
 # Setup Training Arguments
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_BERT_CRF,
-    report_to="wandb",
+    # report_to="wandb",
     evaluation_strategy='steps',
     save_strategy='steps',
     eval_steps=EVAL_STEPS_BERT_CRF,
@@ -110,7 +109,11 @@ training_args = TrainingArguments(
     save_total_limit=2,
     fp16=True,
     seed=SEED,
-    max_grad_norm=1.0
+    max_grad_norm=1.0,
+    gradient_accumulation_steps=2,  # Giúp tăng batch size ảo mà không tiêu tốn thêm RAM GPU
+    optim="adamw_torch",  # Dùng AdamW tối ưu hơn
+    dataloader_num_workers=4,  # Giúp load dữ liệu nhanh hơn
+    dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
 )
 
 # Create Trainer instance
@@ -145,3 +148,11 @@ with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/training_args.txt", "w") as f:
 with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/test_results.txt", "w") as f:
     f.write(str(test_results))
 
+# # Upload to Hugging Face
+# api = huggingface_hub.HfApi()
+# api.upload_large_folder(
+#     folder_path=RESULTS_BERT_CRF_DIR,
+#     repo_id="auphong2707/nlp-ner",
+#     repo_type="model",
+#     private=False
+# )
