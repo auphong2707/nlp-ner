@@ -67,9 +67,9 @@ if __name__ == '__main__':
     #     return metric.compute(predictions=decoded_preds,references=decoded_labels)
 
     def compute_metrics(eval_pred):
-        preds, labels = eval_pred  # preds and labels are now tensors
+        preds, labels = eval_pred  # preds và labels là tensor
         
-        # Convert tensors to lists
+        # Chuyển tensor sang numpy arrays
         preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
         labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
         
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             current_preds = []
 
             for label, pred in zip(label_seq, pred_seq):
-                if label != -100:  # Ignore padding/ignored indices
+                if label != -100:  # Bỏ qua các giá trị đệm
                     current_labels.append(ID2LABEL.get(label, "O"))
                     current_preds.append(ID2LABEL.get(pred, "O"))
             
@@ -93,8 +93,12 @@ if __name__ == '__main__':
             print("Warning: No valid predictions or labels found!")
             return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
         
-        return metric.compute(predictions=decoded_preds, references=decoded_labels)
-
+        result = metric.compute(predictions=decoded_preds, references=decoded_labels)
+        return {
+            "precision": result["overall_precision"],
+            "recall": result["overall_recall"],
+            "f1": result["overall_f1"]
+        }
     "[SETTING UP MODEL AND TRAINING ARGUMENTS]"
     # Create results directory if not exists
     os.makedirs(EXPERIMENT_RESULTS_BERT_CRF_DIR, exist_ok=True)
@@ -157,12 +161,21 @@ if __name__ == '__main__':
         predictions = model_output["predictions"]  # List of lists from CRF
         
         # Convert CRF predictions (list of lists) to a tensor
-        max_seq_len = logits.size(1)  # Get sequence length from logits
-        pred_tensor = torch.full((logits.size(0), max_seq_len), -100, dtype=torch.long, device=logits.device)
+        batch_size, max_seq_len = logits.size(0), logits.size(1)
+        pred_tensor = torch.full(
+            (batch_size, max_seq_len), 
+            -100, 
+            dtype=torch.long, 
+            device=logits.device
+        )
         
         for i, pred_seq in enumerate(predictions):
             valid_len = min(len(pred_seq), max_seq_len)
-            pred_tensor[i, :valid_len] = torch.tensor(pred_seq[:valid_len], dtype=torch.long, device=logits.device)
+            pred_tensor[i, :valid_len] = torch.tensor(
+                pred_seq[:valid_len], 
+                dtype=torch.long, 
+                device=logits.device
+            )
         
         return pred_tensor  # Shape: [batch_size, seq_len]
     # Create Trainer instance
