@@ -20,25 +20,55 @@ class Bert_CRF(BertPreTrainedModel):
         #CRF layer
         self.crf = CRF(self.num_labels)
     
-    def forward(self,input_ids, attention_mask, labels = None):
-        #lấy đầu ra từ bert
-        output = self.bert(input_ids=input_ids, attention_mask = attention_mask)
-        sequence_ouput = output.last_hidden_state
-        sequence_ouput = self.dropout(sequence_ouput)
+    # def forward(self,input_ids, attention_mask, labels = None):
+    #     #lấy đầu ra từ bert
+    #     output = self.bert(input_ids=input_ids, attention_mask = attention_mask)
+    #     sequence_ouput = output.last_hidden_state
+    #     sequence_ouput = self.dropout(sequence_ouput)
 
-        #tính logits qua lớp fully connected
-        logits = self.fc(sequence_ouput)
+    #     #tính logits qua lớp fully connected
+    #     logits = self.fc(sequence_ouput)
 
+    #     predictions = self.crf.viterbi_decode(logits, mask=attention_mask.bool())
+    #     if labels is not None:
+    #         loss = -self.crf(logits, labels, mask=attention_mask.bool())
+    #         # Nếu loss không phải là scalar, thực hiện giảm xuống 1 giá trị duy nhất
+    #         if loss.dim() > 0:
+    #             loss = loss.mean()
+    #         return {"loss": loss, "logits": logits, "predictions": predictions}
+    #     else:
+    #         return {"logits": logits, "predictions": predictions}
+    def forward(self, input_ids, attention_mask, labels=None):
+        output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        sequence_output = output.last_hidden_state
+        sequence_output = self.dropout(sequence_output)
+
+        logits = self.fc(sequence_output)
         predictions = self.crf.viterbi_decode(logits, mask=attention_mask.bool())
+        
+        # Chuyển predictions thành tensor ngay trong forward
+        batch_size, max_seq_len = logits.size(0), logits.size(1)
+        pred_tensor = torch.full(
+            (batch_size, max_seq_len), 
+            -100, 
+            dtype=torch.long, 
+            device=logits.device
+        )
+        for i, pred_seq in enumerate(predictions):
+            valid_len = min(len(pred_seq), max_seq_len)
+            pred_tensor[i, :valid_len] = torch.tensor(
+                pred_seq[:valid_len], 
+                dtype=torch.long, 
+                device=logits.device
+            )
+        
         if labels is not None:
             loss = -self.crf(logits, labels, mask=attention_mask.bool())
-            # Nếu loss không phải là scalar, thực hiện giảm xuống 1 giá trị duy nhất
             if loss.dim() > 0:
                 loss = loss.mean()
-            return {"loss": loss, "logits": logits, "predictions": predictions}
+            return {"loss": loss, "logits": logits, "predictions": pred_tensor}
         else:
-            return {"logits": logits, "predictions": predictions}
-
+            return {"logits": logits, "predictions": pred_tensor}
 
 
 

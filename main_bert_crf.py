@@ -140,7 +140,7 @@ if __name__ == '__main__':
         output_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR,
         logging_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR + "/logs",
         logging_steps=LOGGING_STEPS,
-        load_best_model_at_end="eval_overall_f1",
+        load_best_model_at_end="f1",
         greater_is_better=True,
         save_total_limit=2,
         fp16=True,
@@ -148,19 +148,21 @@ if __name__ == '__main__':
         max_grad_norm=1.0,
         # gradient_accumulation_steps=2,  # Giúp tăng batch size ảo mà không tiêu tốn thêm RAM GPU
         # optim="adamw_torch",  # Dùng AdamW tối ưu hơn
-        dataloader_num_workers=4,  # Giúp load dữ liệu nhanh hơn
-        dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
+        # dataloader_num_workers=4,  # Giúp load dữ liệu nhanh hơn
+        # dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
     )
 
     # def preprocess_logits_for_metrics(model_output, labels):
     #     logits = model_output["logits"]
     #     return logits.argmax(dim=-1)
     def preprocess_logits_for_metrics(model_output, labels):
-        # Extract logits and predictions from model output
-        logits = model_output["logits"]  # Shape: [batch_size, seq_len, num_labels]
-        predictions = model_output["predictions"]  # List of lists from CRF
+        print("Model output type:", type(model_output))
+        print("Model output keys:", model_output.keys())
+        logits = model_output["logits"]
+        predictions = model_output["predictions"]
+        print("Logits shape:", logits.shape)
+        print("Predictions sample:", predictions[:2])  # In 2 mẫu đầu tiên
         
-        # Convert CRF predictions (list of lists) to a tensor
         batch_size, max_seq_len = logits.size(0), logits.size(1)
         pred_tensor = torch.full(
             (batch_size, max_seq_len), 
@@ -177,7 +179,9 @@ if __name__ == '__main__':
                 device=logits.device
             )
         
-        return pred_tensor  # Shape: [batch_size, seq_len]
+        print("Output tensor shape:", pred_tensor.shape)
+        print("Output tensor sample:", pred_tensor[:2])
+        return pred_tensor
     # Create Trainer instance
     trainer = Trainer(
         model=model,
