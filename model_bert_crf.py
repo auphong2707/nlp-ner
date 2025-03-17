@@ -32,6 +32,9 @@ class Bert_CRF(BertPreTrainedModel):
         predictions = self.crf.viterbi_decode(logits, mask=attention_mask.bool())
         if labels is not None:
             loss = -self.crf(logits, labels, mask=attention_mask.bool())
+            # Nếu loss không phải là scalar, thực hiện giảm xuống 1 giá trị duy nhất
+            if loss.dim() > 0:
+                loss = loss.mean()
             return {"loss": loss, "logits": logits, "predictions": predictions}
         else:
             return {"logits": logits, "predictions": predictions}
