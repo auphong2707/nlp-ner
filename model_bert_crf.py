@@ -30,7 +30,7 @@ class Bert_CRF(BertPreTrainedModel):
         logits = self.fc(sequence_ouput)
 
         #nếu có nhãn(trainning), tính loss
-        if labels:
+        if labels is not None:
             loss = -self.crf(logits,labels,mask = attention_mask.bool(),reduction='mean')
             return loss
         #nếu không có nhãn (inference), dự đoán chuỗi nhãn

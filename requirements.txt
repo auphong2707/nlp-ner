@@ -3,3 +3,4 @@ huggingface_hub
 wandb
 evaluate
 torchcrf
+seqeval
