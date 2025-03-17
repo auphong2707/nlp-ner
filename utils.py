@@ -38,7 +38,12 @@ def load_jsonl(file_path) -> list:
         return [json.loads(line) for line in file]
 
 # Preprocessing function: Tokenize and align labels
-def tokenize_and_align_labels(example, TOKENIZER = TOKENIZER):
+def tokenize_and_align_labels(example, TOKENIZER = None):
+    if TOKENIZER is None:
+
+        raise ValueError("Tokenizer is None. Make sure it is properly initialized.")
+
+
     # Tokenize while telling the tokenizer that the input is already split into words.
     tokenized_inputs = TOKENIZER(example["tokens"], truncation=True, padding="max_length", is_split_into_words=True)
     labels = []
