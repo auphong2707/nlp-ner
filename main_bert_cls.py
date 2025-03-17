@@ -19,7 +19,7 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
-    print(preds.shape, labels.shape)
+    print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
 
     decoded_labels = []
     decoded_preds = []
@@ -83,6 +83,7 @@ training_args = TrainingArguments(
 )
 
 def preprocess_logits_for_metrics(logits, labels):
+    print(logits)
     return logits.argmax(dim=-1)
 
 # Create Trainer

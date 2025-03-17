@@ -28,7 +28,8 @@ if __name__ == '__main__':
 
     def compute_metrics(eval_pred):
         preds, labels = eval_pred
-        print(f"preds.shape, labels.shape{preds.shape, labels.shape}")
+        print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
+        print(pred)
         # Convert preds and labels to lists if numpy arrays
         if isinstance(preds, np.ndarray):
             preds = preds.tolist()
@@ -120,6 +121,8 @@ if __name__ == '__main__':
     )
 
     def preprocess_logits_for_metrics(logits, labels):
+        print(logits)
+        exit(0)
         return logits.argmax(dim=-1)
 
     # Create Trainer instance
