@@ -29,7 +29,7 @@ if __name__ == '__main__':
     def compute_metrics(eval_pred):
         preds, labels = eval_pred
         print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
-        print(pred)
+        # print(pred)
         # Convert preds and labels to lists if numpy arrays
         if isinstance(preds, np.ndarray):
             preds = preds.tolist()
