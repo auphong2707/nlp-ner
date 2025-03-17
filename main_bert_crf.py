@@ -26,9 +26,9 @@ def collate_fn(batch):
 
 # Load dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CRF)
-train_loader = DataLoader(train_dataset,batch_size=TRAIN_BATCH_SIZE_BERT_CRF, shuffle=True, collate_fn=collate_fn)
-val_loader = DataLoader(val_dataset,batch_size=EVAL_BATCH_SIZE_BERT_CRF,shuffle=False,collate_fn=collate_fn)
-test_loader = DataLoader(test_dataset,batch_size=EVAL_BATCH_SIZE_BERT_CRF,shuffle=False,collate_fn=collate_fn)
+train_loader = DataLoader(train_dataset,batch_size=TRAIN_BATCH_SIZE_BERT_CRF, shuffle=True, num_workers=4, collate_fn=collate_fn)
+val_loader = DataLoader(val_dataset,batch_size=EVAL_BATCH_SIZE_BERT_CRF,shuffle=False,num_workers=4,collate_fn=collate_fn)
+test_loader = DataLoader(test_dataset,batch_size=EVAL_BATCH_SIZE_BERT_CRF,shuffle=False,num_workers=4,collate_fn=collate_fn)
 
 "[SETTING UP MODEL AND TRAINING ARGUMENTS]"
 # Load checkpoint if available
