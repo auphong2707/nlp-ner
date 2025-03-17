@@ -116,6 +116,9 @@ training_args = TrainingArguments(
     dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
 )
 
+def preprocess_logits_for_metrics(logits, labels):
+    return logits.argmax(dim=-1)
+
 # Create Trainer instance
 trainer = Trainer(
     model=model,
@@ -123,6 +126,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
 
