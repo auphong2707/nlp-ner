@@ -1,17 +1,19 @@
 import os
-import torch
+
 import numpy as np
+import torch
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
-from utils import set_seed, prepare_dataset
-from model_bert_crf import Bert_CRF
-from constants import *
 import wandb, huggingface_hub, evaluate
 from transformers import TrainingArguments, Trainer
 
+from model_bert_crf import Bert_CRF
+from constants import *
+from utils import set_seed, prepare_dataset
 # Set seed for reproducibility
 set_seed(SEED)
 
+"[PREPARING DATASET AND FUNCTIONS]"
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
@@ -28,6 +30,7 @@ train_loader = DataLoader(train_dataset,batch_size=TRAIN_BATCH_SIZE_BERT_CRF, sh
 val_loader = DataLoader(val_dataset,batch_size=EVAL_BATCH_SIZE_BERT_CRF,shuffle=False,collate_fn=collate_fn)
 test_loader = DataLoader(test_dataset,batch_size=EVAL_BATCH_SIZE_BERT_CRF,shuffle=False,collate_fn=collate_fn)
 
+"[SETTING UP MODEL AND TRAINING ARGUMENTS]"
 # Load checkpoint if available
 def get_last_checkpoint(ouput_dir):
     if not os.path.exists(ouput_dir):
@@ -51,7 +54,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 # Setup Training Arguments
-training_arg = TrainingArguments(
+training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_BERT_CRF,
     report_to="wandb",
     evaluation_strategy='steps',
@@ -66,7 +69,7 @@ training_arg = TrainingArguments(
     output_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR,
     logging_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR + "/logs",
     logging_steps=LOGGING_STEPS,
-    load_best_model_at_end="eval_f1",
+    load_best_model_at_end="eval_overall_f1",
     greater_is_better=True,
     save_total_limit=2,
     fp16=True,
@@ -118,26 +121,29 @@ def compute_metrics(eval_pred):
 # Create Trainer instance
 trainer = Trainer(
     model=model,
-    args=training_arg,
+    args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
 )
 
+"[TRAINING]"
 # Training loop
 trainer.train()
 
+"[EVALUATING]"
 # Evaluation
 test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
+"[SAVING THINGS]"
 # save model, tokenizer, and training results
 model.save_pretrained(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 tokenizer.save_pretrained(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 
 # Save training arguments and test results
 with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/training_args.txt", "w") as f:
-    f.write(str(training_arg))
+    f.write(str(training_args))
 
 with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/test_results.txt", "w") as f:
     f.write(str(test_results))
