@@ -120,8 +120,8 @@ if __name__ == '__main__':
         dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
     )
 
-    def preprocess_logits_for_metrics(logits, labels):
-        print(f"shape of logits: {logits.shape}")
+    def preprocess_logits_for_metrics(model_output, labels):
+        logits = model_output["logits"]
         return logits.argmax(dim=-1)
 
     # Create Trainer instance
