@@ -23,7 +23,7 @@ class Bert_CRF(BertPreTrainedModel):
     def forward(self,input_ids, attention_mask, labels = None):
         #lấy đầu ra từ bert
         output = self.bert(input_ids=input_ids, attention_mask = attention_mask)
-        sequence_ouput = output[0]
+        sequence_ouput = output.last_hidden_state
         sequence_ouput = self.dropout(sequence_ouput)
 
         #tính logits qua lớp fully connected

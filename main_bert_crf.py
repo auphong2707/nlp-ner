@@ -82,7 +82,9 @@ checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 if checkpoint:
     model = Bert_CRF.from_pretrained(checkpoint)
 else:
-    model = Bert_CRF(MODEL_BERT_CRF,num_labels=len(ID2LABEL),ignore_mismatched_sizes=True)
+    model = Bert_CRF(MODEL_BERT_CRF,num_labels=len(ID2LABEL),
+                    #  ignore_mismatched_sizes=True,
+                     )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
