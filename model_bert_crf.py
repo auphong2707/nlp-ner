@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from pytorch_crf import CRF  # Sử dụng pytorch-crf thay vì torch.CRF
+from torchcrf import CRF  # Sử dụng pytorch-crf thay vì torch.CRF
 from transformers import BertModel, BertPreTrainedModel, BertConfig
 
 class Bert_CRF(BertPreTrainedModel):
