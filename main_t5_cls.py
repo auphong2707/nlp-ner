@@ -24,7 +24,7 @@ def compute_metrics(eval_pred):
     logits = np.nan_to_num(logits)  
     predictions = np.argmax(logits, axis=-1)
 
-    # Bỏ qua special tokens (-100)
+    # Skip special tokens (-100)
     true_predictions = [
         [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
@@ -33,10 +33,14 @@ def compute_metrics(eval_pred):
         [ID2LABEL[l] for l in label if l != -100]
         for label in labels
     ]
+    
+    # Calculate precision, recall, and F1 scores
+    results = metric.compute(predictions=true_predictions, references=true_labels)
 
+    # Log metrics separately to wandb
+    wandb.log({"eval/precision": results["precision"], "eval/recall": results["recall"], "eval/f1": results["f1"]})
+    
     return metric.compute(predictions=true_predictions, references=true_labels)
-
-
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5, exist_ok=True)
@@ -63,7 +67,7 @@ model.to("cuda")
 # Create Training Arguments
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME,
-    report_to="wandb"
+    report_to="wandb",
     evaluation_strategy="steps",
     save_strategy="steps",
     eval_steps=EVAL_STEPS_T5,
