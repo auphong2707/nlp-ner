@@ -36,8 +36,11 @@ def compute_metrics(eval_pred):
 
     # Set zero_division to handle cases where recall and f1 are undefined
     results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
-
-    # Log metrics
+    
+    # Debug: Check the actual results
+    print(f"Computed results: {results}")
+    
+    # Log metrics (set default to 0 if not found in results)
     precision = results.get("precision", 0.0)
     recall = results.get("recall", 0.0)
     f1 = results.get("f1", 0.0)
