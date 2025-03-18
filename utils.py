@@ -116,24 +116,23 @@ def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoToke
 # Tokenization and alignment for T5
 def tokenize_t5(example):
     tokenized_inputs = TOKENIZER(
-        example["tokens"],  # Không cần ghép chuỗi, giữ dạng danh sách token
+        example["tokens"],  # No need to concatenate strings, keep as a list of tokens
         truncation=True,
         padding="max_length",
         max_length=128,
-        is_split_into_words=True  # Đảm bảo giữ mapping giữa từ và token
+        is_split_into_words=True  # Ensure word-to-token alignment
     )
 
-    # Gán nhãn theo tokenized sequence
-    labels = [-100] * len(tokenized_inputs["input_ids"])  # Mặc định -100 để bỏ qua special tokens
-    word_ids = tokenized_inputs.word_ids()  # Map token với từ ban đầu
+    # Assign labels to the tokenized sequence
+    labels = [-100] * len(tokenized_inputs["input_ids"])  # Default to -100 to ignore special tokens
+    word_ids = tokenized_inputs.word_ids()  # Map token to the original word
 
     for i, word_id in enumerate(word_ids):
-        if word_id is not None:  # Bỏ qua special tokens
+        if word_id is not None:  # Ignore special tokens
             labels[i] = example["ner_tags"][word_id]
 
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
-
 
 # Prepare dataset for T5
 def prepare_dataset_t5(tokenizer_name):
