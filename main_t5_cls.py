@@ -21,17 +21,6 @@ data_collator = DataCollatorForTokenClassification(tokenizer)
 # Define metric
 metric = evaluate.load("seqeval")
 
-# Function to compute class weights
-def compute_class_weights(dataset):
-    labels = [example['ner_tags'] for example in dataset]
-    flat_labels = [label for sublist in labels for label in sublist if label != -100]
-    class_weights = compute_class_weight('balanced', classes=np.unique(flat_labels), y=flat_labels)
-    class_weights = torch.tensor(class_weights, dtype=torch.float).to('cuda')
-    return class_weights
-
-# Compute class weights for handling imbalance
-class_weights = compute_class_weights(train_dataset)
-
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     logits = np.nan_to_num(logits)
