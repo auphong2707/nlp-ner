@@ -21,10 +21,10 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
-    logits = np.nan_to_num(logits)  
+    logits = np.nan_to_num(logits)
     predictions = np.argmax(logits, axis=-1)
 
-    # Skip special tokens (-100)
+    # Ignore special tokens (-100)
     true_predictions = [
         [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
@@ -33,14 +33,18 @@ def compute_metrics(eval_pred):
         [ID2LABEL[l] for l in label if l != -100]
         for label in labels
     ]
-    
-    # Calculate precision, recall, and F1 scores
-    results = metric.compute(predictions=true_predictions, references=true_labels)
 
-    # Log metrics separately to wandb
-    wandb.log({"eval/precision": results["precision"], "eval/recall": results["recall"], "eval/f1": results["f1"]})
-    
-    return metric.compute(predictions=true_predictions, references=true_labels)
+    # Set zero_division to handle cases where recall and f1 are undefined
+    results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
+
+    # Log metrics
+    precision = results.get("precision", 0.0)
+    recall = results.get("recall", 0.0)
+    f1 = results.get("f1", 0.0)
+
+    wandb.log({"eval/precision": precision, "eval/recall": recall, "eval/f1": f1})
+
+    return results
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5, exist_ok=True)
