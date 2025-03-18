@@ -7,8 +7,6 @@ import wandb, huggingface_hub, os
 import evaluate
 from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AutoTokenizer
 from transformers import DataCollatorForTokenClassification
-from sklearn.utils.class_weight import compute_class_weight
-import torch
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -42,9 +40,6 @@ def compute_metrics(eval_pred):
 
     # Set zero_division to handle cases where recall and f1 are undefined
     results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
-    
-    # Debugging: Print the computed results
-    print(f"Computed results: {results}")
 
     # Log metrics (set default to 0 if not found in results)
     precision = results.get("precision", 0.0)
@@ -87,7 +82,7 @@ training_args = TrainingArguments(
     save_steps=SAVE_STEPS_T5,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_T5,
-    num_train_epochs=5,  # Increased epochs to give model more training time
+    num_train_epochs=NUM_TRAIN_EPOCHS_T5, 
     weight_decay=WEIGHT_DECAY_T5,
     learning_rate=LR_T5, 
     output_dir=EXPERIMENT_RESULTS_DIR_T5,
@@ -101,7 +96,7 @@ training_args = TrainingArguments(
     seed=SEED,
 )
 
-# Trainer with class weights applied
+# Trainer 
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -110,8 +105,6 @@ trainer = Trainer(
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
     data_collator=data_collator,
-    # Add class weights to the model’s loss function
-    loss_func=torch.nn.CrossEntropyLoss(weight=class_weights)
 )
 
 # Train
