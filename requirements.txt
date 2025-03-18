@@ -2,7 +2,7 @@ datasets
 huggingface_hub
 wandb
 evaluate
-torchcrf
+pytorch-crf
 seqeval
 transformers[torch]
 accelerate==1.5.2
