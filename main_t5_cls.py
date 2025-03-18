@@ -7,6 +7,8 @@ import wandb, huggingface_hub, os
 import evaluate
 from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AutoTokenizer
 from transformers import DataCollatorForTokenClassification
+from sklearn.utils.class_weight import compute_class_weight
+import torch
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -18,6 +20,17 @@ data_collator = DataCollatorForTokenClassification(tokenizer)
 
 # Define metric
 metric = evaluate.load("seqeval")
+
+# Function to compute class weights
+def compute_class_weights(dataset):
+    labels = [example['ner_tags'] for example in dataset]
+    flat_labels = [label for sublist in labels for label in sublist if label != -100]
+    class_weights = compute_class_weight('balanced', classes=np.unique(flat_labels), y=flat_labels)
+    class_weights = torch.tensor(class_weights, dtype=torch.float).to('cuda')
+    return class_weights
+
+# Compute class weights for handling imbalance
+class_weights = compute_class_weights(train_dataset)
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
@@ -34,12 +47,16 @@ def compute_metrics(eval_pred):
         for label in labels
     ]
 
+    # Debugging: Check the actual results for true predictions and labels
+    print(f"True Predictions: {true_predictions[:5]}")
+    print(f"True Labels: {true_labels[:5]}")
+
     # Set zero_division to handle cases where recall and f1 are undefined
     results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
     
-    # Debug: Check the actual results
+    # Debugging: Print the computed results
     print(f"Computed results: {results}")
-    
+
     # Log metrics (set default to 0 if not found in results)
     precision = results.get("precision", 0.0)
     recall = results.get("recall", 0.0)
@@ -81,21 +98,21 @@ training_args = TrainingArguments(
     save_steps=SAVE_STEPS_T5,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_T5,
-    num_train_epochs=NUM_TRAIN_EPOCHS_T5,
+    num_train_epochs=5,  # Increased epochs to give model more training time
     weight_decay=WEIGHT_DECAY_T5,
     learning_rate=LR_T5, 
     output_dir=EXPERIMENT_RESULTS_DIR_T5,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5 + "/logs",
     logging_steps=LOGGING_STEPS,
     load_best_model_at_end=True,
-     metric_for_best_model="eval_overall_f1",
+    metric_for_best_model="eval_overall_f1",
     save_total_limit=2,
     greater_is_better=True,
     fp16=True,
     seed=SEED,
 )
 
-# Trainer
+# Trainer with class weights applied
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -103,7 +120,9 @@ trainer = Trainer(
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
-    data_collator=data_collator
+    data_collator=data_collator,
+    # Add class weights to the model’s loss function
+    loss_func=torch.nn.CrossEntropyLoss(weight=class_weights)
 )
 
 # Train
