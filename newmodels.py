@@ -1,14 +1,15 @@
 import torch
-import torch.nn as nn
-from transformers import BertModel
+from transformers import BertTokenizer, BertModel, PreTrainedModel
 from torchcrf import CRF
+import torch.nn as nn
 
-class BERT_BiLSTM_CRF(nn.Module):
-    def __init__(self, bert_model_name, num_labels, hidden_dim=256, dropout=0.3):
-        super(BERT_BiLSTM_CRF, self).__init__()
+# Định nghĩa lại mô hình tương thích với Hugging Face Trainer
+class BERT_BiLSTM_CRF(PreTrainedModel):
+    def __init__(self, config, num_labels, hidden_dim=256, dropout=0.3):
+        super().__init__(config)
         
         # Load pre-trained BERT model
-        self.bert = BertModel.from_pretrained(bert_model_name)
+        self.bert = BertModel(config)
         self.hidden_dim = hidden_dim
         self.num_labels = num_labels
         
@@ -33,16 +34,15 @@ class BERT_BiLSTM_CRF(nn.Module):
     def forward(self, input_ids, attention_mask, labels=None):
         bert_outputs = self.bert(input_ids, attention_mask=attention_mask)
         sequence_output = bert_outputs.last_hidden_state  # Shape: (batch_size, seq_len, hidden_dim)
-        
+
         # Pass through BiLSTM
         lstm_output, _ = self.lstm(sequence_output)  # Shape: (batch_size, seq_len, hidden_dim * 2)
-        
+
         # Fully connected layer
         emissions = self.fc(self.dropout(lstm_output))  # Shape: (batch_size, seq_len, num_labels)
         
         if labels is not None:
             loss = -self.crf(emissions, labels, mask=attention_mask.byte(), reduction='mean')
-            return loss
+            return {"loss": loss, "logits": emissions}
         else:
-            predictions = self.crf.decode(emissions, mask=attention_mask.byte())
-            return predictions
+            return {"logits": emissions}
