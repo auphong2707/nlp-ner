@@ -104,7 +104,10 @@ def compute_metrics(eval_pred):
                 continue  # Skip invalid values
             if label != 31:  # Ignore padding token
                 current_labels.append(ID2LABEL.get(label, "O"))
+                if isinstance(pred, list):
+                    pred = pred[0]  # Lấy phần tử đầu tiên nếu là danh sách
                 current_preds.append(ID2LABEL.get(pred, "O"))
+
 
         if current_labels and current_preds:  # Ensure non-empty sequences
             decoded_labels.append(current_labels)
