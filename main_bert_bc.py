@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 from transformers import AutoTokenizer
+from transformers import AutoConfig
 from torch.utils.data import DataLoader
 from utils import set_seed, prepare_dataset
 from newmodels import BERT_BiLSTM_CRF
@@ -45,7 +46,8 @@ checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BBC_DIR)
 if checkpoint:
     model = BERT_BiLSTM_CRF.from_pretrained(checkpoint)
 else:
-    model = BERT_BiLSTM_CRF(MODEL_BERT_BC, num_labels=len(ID2LABEL))
+    config = AutoConfig.from_pretrained(MODEL_BERT_BC)  # Tải cấu hình model từ Hugging Face
+    model = BERT_BiLSTM_CRF(config, num_labels=len(ID2LABEL))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
