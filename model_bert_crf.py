@@ -20,7 +20,7 @@ class Bert_CRF(BertPreTrainedModel):
         # CRF layer
         self.crf = CRF(num_labels, batch_first=True)  # batch_first=True để phù hợp với định dạng đầu vào của BERT
     
-def forward(self, input_ids, attention_mask, labels=None):
+def forward(self, input_ids, attention_mask, labels=None,**kwargs):
     outputs = self.bert(input_ids, attention_mask=attention_mask)
     sequence_output = outputs.last_hidden_state
     sequence_output = self.dropout(sequence_output)
