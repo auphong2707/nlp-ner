@@ -31,6 +31,7 @@ class Bert_CRF(BertPreTrainedModel):
 
         # Chuyển attention_mask sang kiểu bool (yêu cầu của pytorch-crf)
         mask = attention_mask.bool()
+        # return logits
 
         # Giải mã chuỗi tối ưu bằng Viterbi
         predictions = self.crf.decode(logits, mask=mask)  # Trả về list các chuỗi nhãn tốt nhất
@@ -43,21 +44,22 @@ class Bert_CRF(BertPreTrainedModel):
             return {"logits": logits, "predictions": predictions}
 
 # # Ví dụ sử dụng
-# if __name__ == "__main__":
-#     # Khởi tạo mô hình
-#     model = Bert_CRF("bert-base-uncased", num_labels=5)
+if __name__ == "__main__":
+    # Khởi tạo mô hình
+    model = Bert_CRF("bert-base-uncased", num_labels=5)
 
-#     # Tạo dữ liệu giả lập
-#     batch_size, seq_length = 2, 10
-#     input_ids = torch.randint(0, 1000, (batch_size, seq_length))
-#     attention_mask = torch.ones(batch_size, seq_length, dtype=torch.long)
-#     labels = torch.randint(0, 5, (batch_size, seq_length))  # Nhãn giả lập
+    # Tạo dữ liệu giả lập
+    batch_size, seq_length = 2, 10
+    input_ids = torch.randint(0, 1000, (batch_size, seq_length))
+    attention_mask = torch.ones(batch_size, seq_length, dtype=torch.long)
+    labels = torch.randint(0, 5, (batch_size, seq_length))  # Nhãn giả lập
 
-#     # Gọi forward với labels
-#     output = model(input_ids, attention_mask, labels)
-#     print("Loss:", output["loss"])
-#     print("Predictions:", output["predictions"])
+    # Gọi forward với labels
+    output = model(input_ids, attention_mask, labels)
+    print("Loss:", output["loss"])
+    print("Predictions:", output["predictions"])
 
-#     # Gọi forward không có labels
-#     output = model(input_ids, attention_mask)
-#     print("Predictions:", output["predictions"])
+    # Gọi forward không có labels
+    output = model(input_ids, attention_mask)
+    print("Predictions:", output["predictions"])
+    print("Shape of logits:", output["logits"].shape)

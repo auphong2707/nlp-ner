@@ -1,4 +1,5 @@
 import os
+import platform
 
 import numpy as np
 import torch
@@ -17,8 +18,9 @@ if __name__ == '__main__':
 
     "[PREPARING DATASET AND FUNCTIONS]"
     # Login to wandb & Hugging Face
-    wandb.login(key=os.getenv("WANDB_API_KEY"))
-    huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
+    if platform.system() != "Windows":
+        wandb.login(key=os.getenv("WANDB_API_KEY"))
+        huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
     # Load dataset and tokenizer
     train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CRF)
@@ -127,7 +129,7 @@ if __name__ == '__main__':
     # Setup Training Arguments
     training_args = TrainingArguments(
         run_name=EXPERIMENT_NAME_BERT_CRF,
-        report_to="wandb",
+        report_to="wandb" if platform.system() != "Windows" else None,
         eval_strategy='steps',
         save_strategy='steps',
         eval_steps=EVAL_STEPS_BERT_CRF,
@@ -159,29 +161,31 @@ if __name__ == '__main__':
         print("Model output type:", type(model_output))
         print("Model output keys:", model_output.keys())
         logits = model_output["logits"]
-        predictions = model_output["predictions"]
-        print("Logits shape:", logits.shape)
-        print("Predictions sample:", predictions[:2])  # In 2 mẫu đầu tiên
+        # predictions = model_output["predictions"]
+        # print("Logits shape:", logits.shape)
+        # print("Predictions sample:", predictions[:2])  # In 2 mẫu đầu tiên
         
-        batch_size, max_seq_len = logits.size(0), logits.size(1)
-        pred_tensor = torch.full(
-            (batch_size, max_seq_len), 
-            -100, 
-            dtype=torch.long, 
-            device=logits.device
-        )
+        # batch_size, max_seq_len = logits.size(0), logits.size(1)
+        # pred_tensor = torch.full(
+        #     (batch_size, max_seq_len), 
+        #     -100, 
+        #     dtype=torch.long, 
+        #     device=logits.device
+        # )
         
-        for i, pred_seq in enumerate(predictions):
-            valid_len = min(len(pred_seq), max_seq_len)
-            pred_tensor[i, :valid_len] = torch.tensor(
-                pred_seq[:valid_len], 
-                dtype=torch.long, 
-                device=logits.device
-            )
+        # for i, pred_seq in enumerate(predictions):
+        #     valid_len = min(len(pred_seq), max_seq_len)
+        #     pred_tensor[i, :valid_len] = torch.tensor(
+        #         pred_seq[:valid_len], 
+        #         dtype=torch.long, 
+        #         device=logits.device
+        #     )
         
-        print("Output tensor shape:", pred_tensor.shape)
-        print("Output tensor sample:", pred_tensor[:2])
-        return pred_tensor
+        # print("Output tensor shape:", pred_tensor.shape)
+        # print("Output tensor sample:", pred_tensor[:2])
+        # return pred_tensor
+        # return logits
+        return logits.argmax(dim=-1)
     # Create Trainer instance
     trainer = Trainer(
         model=model,
@@ -215,10 +219,11 @@ if __name__ == '__main__':
         f.write(str(test_results))
 
     # Upload to Hugging Face
-    api = huggingface_hub.HfApi()
-    api.upload_large_folder(
-        folder_path=RESULTS_BERT_CRF_DIR,
-        repo_id="auphong2707/nlp-ner",
-        repo_type="model",
-        private=False
-    )
+    if platform.system() != "Windows":
+        api = huggingface_hub.HfApi()
+        api.upload_large_folder(
+            folder_path=RESULTS_BERT_CRF_DIR,
+            repo_id="auphong2707/nlp-ner",
+            repo_type="model",
+            private=False
+        )
