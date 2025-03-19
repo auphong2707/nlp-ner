@@ -1,73 +1,52 @@
 import torch
 import torch.nn as nn
-from torchcrf import CRF  # Sử dụng pytorch-crf thay vì torch.CRF
-from transformers import BertModel, BertPreTrainedModel, BertConfig
+from torchcrf import CRF
+from transformers import BertModel, BertPreTrainedModel
 
 class Bert_CRF(BertPreTrainedModel):
-    def __init__(self, bert_model_name, num_labels, hidden_dim=256, dropout=0.3):
-        bert_config = BertConfig.from_pretrained(bert_model_name)
-        super().__init__(bert_config)
-
-        # Bert model
-        self.bert = BertModel.from_pretrained(bert_model_name)
-        self.hidden_dim = hidden_dim  # Không dùng trực tiếp trong code này, nhưng giữ lại nếu bạn muốn thêm layer trung gian
+    def __init__(self, config, num_labels):
+        super().__init__(config)
+        self.bert = BertModel(config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.classifier = nn.Linear(config.hidden_size, num_labels)
+        self.crf = CRF(num_labels, batch_first=True)
         self.num_labels = num_labels
-        self.dropout = nn.Dropout(dropout)
-        
-        # Linear layer để chuyển từ hidden_size của BERT sang num_labels
-        self.fc = nn.Linear(self.bert.config.hidden_size, self.num_labels)
+        self.init_weights()
 
-        # CRF layer
-        self.crf = CRF(num_labels, batch_first=True)  # batch_first=True để phù hợp với định dạng đầu vào của BERT
-    
-def forward(self, input_ids, attention_mask, labels=None,**kwargs):
-    outputs = self.bert(input_ids, attention_mask=attention_mask)
-    sequence_output = outputs.last_hidden_state
-    sequence_output = self.dropout(sequence_output)
-    logits = self.fc(sequence_output)
-    
-    mask = attention_mask.bool()
-    
-    if labels is not None:
-        # Kiểm tra nhãn hợp lệ
-        for i in range(logits.size(0)):
-            valid_labels = labels[i][mask[i]]
-            if not torch.all((valid_labels >= 0) & (valid_labels < self.num_labels)):
-                raise ValueError(f"Nhãn không hợp lệ trong batch {i}: {valid_labels}")
-        
-        loss = -self.crf(logits, labels, mask=mask, reduction='mean')
-        predictions = self.crf.decode(logits, mask=mask)
-        return {"loss": loss, "logits": logits, "predictions": predictions}
-    else:
-        predictions = self.crf.decode(logits, mask=mask)
-        return {"logits": logits, "predictions": predictions}
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        labels=None,
+        **kwargs  # Catch any extra arguments
+    ):
+        # Get BERT outputs
+        outputs = self.bert(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids
+        )
+        sequence_output = outputs[0]  # [batch_size, seq_length, hidden_size]
+        sequence_output = self.dropout(sequence_output)
 
+        # Pass through classifier to get emissions
+        emissions = self.classifier(sequence_output)  # [batch_size, seq_length, num_labels]
 
+        # Ensure mask is boolean for CRF
+        mask = attention_mask.bool() if attention_mask is not None else None
 
+        if labels is not None:
+            # Compute CRF loss
+            loss = -self.crf(emissions, labels, mask=mask, reduction='mean')
+            return {"loss": loss, "logits": emissions}
+        else:
+            # Decode predictions without labels
+            predictions = self.crf.decode(emissions, mask=mask)
+            return {"logits": emissions, "predictions": predictions}
 
-
-
-
-
-
-
-# # Ví dụ sử dụng
+# Example instantiation (adjust as needed)
 if __name__ == "__main__":
-    # Khởi tạo mô hình
-    model = Bert_CRF("bert-base-uncased", num_labels=5)
-
-    # Tạo dữ liệu giả lập
-    batch_size, seq_length = 2, 10
-    input_ids = torch.randint(0, 1000, (batch_size, seq_length))
-    attention_mask = torch.ones(batch_size, seq_length, dtype=torch.long)
-    labels = torch.randint(0, 5, (batch_size, seq_length))  # Nhãn giả lập
-
-    # Gọi forward với labels
-    output = model(input_ids, attention_mask, labels)
-    print("Loss:", output["loss"])
-    print("Predictions:", output["predictions"])
-
-    # Gọi forward không có labels
-    output = model(input_ids, attention_mask)
-    print("Predictions:", output["predictions"])
-    print("Logits:", output["logits"].shape)
+    from transformers import BertConfig
+    config = BertConfig.from_pretrained("bert-base-cased")
+    model = Bert_CRF(config, num_labels=31)  # Adjust num_labels based on your ID2LABEL
