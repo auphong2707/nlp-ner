@@ -38,7 +38,7 @@ ID2LABEL = {
     28: "I-TIME",
     29: "B-VEHI",
     30: "I-VEHI",
-    31: "PAD"
+    # 31: "PAD"
 }
 
 

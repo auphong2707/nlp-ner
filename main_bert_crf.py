@@ -28,69 +28,25 @@ if __name__ == '__main__':
     # Define compute_metrics function
     metric = evaluate.load("seqeval")
 
-    # def compute_metrics(eval_pred):
-    #     preds, labels = eval_pred
-    #     print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
-    #     # print(pred)
-    #     # Convert preds and labels to lists if numpy arrays
-    #     if isinstance(preds, np.ndarray):
-    #         preds = preds.tolist()
-    #     if isinstance(labels,np.ndarray):
-    #         labels = labels.tolist()
-
-    #     decoded_labels = []
-    #     decoded_preds = []
-
-    #     for label_seq, pred_seq in zip(labels, preds):
-    #         # if not isinstance(label_seq, list) or not isinstance(pred_seq, list):
-    #         #     continue
-            
-    #         current_labels = []
-    #         current_preds = []
-
-    #         for label, pred in zip(label_seq, pred_seq):
-    #             # if isinstance(label, (float, np.float32)) or isinstance(pred, (float,np.float32)):
-    #             #     continue
-    #             if label!=31:
-    #                 current_labels.append(ID2LABEL.get(label,"0"))
-    #                 current_preds.append(ID2LABEL.get(pred,"0"))
-            
-    #         if current_labels and current_preds:
-    #             decoded_labels.append(current_labels)
-    #             decoded_preds.append(current_preds)
-
-    #     print("Final decoded_preds sample:", decoded_preds[:5])
-    #     print("Final decoded_labels sample:", decoded_labels[:5])
-
-    #     if not decoded_preds or not decoded_labels:
-    #         print("Warning: No valid predictions or labels found!")
-    #         return {"eval_precision": 0.0, "eval_recall": 0.0, "eval_f1": 0.0}
-        
-    #     return metric.compute(predictions=decoded_preds,references=decoded_labels)
-
     def compute_metrics(eval_pred):
-        preds, labels = eval_pred  # preds và labels là tensor
-        
-        # Chuyển tensor sang numpy arrays
+        preds, labels = eval_pred
         preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
         labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
         
         decoded_labels = []
         decoded_preds = []
-
+        
         for label_seq, pred_seq in zip(labels, preds):
             current_labels = []
             current_preds = []
-
             for label, pred in zip(label_seq, pred_seq):
-                if label != 31:  # Bỏ qua các giá trị đệm
+                if label != -100:
                     current_labels.append(ID2LABEL.get(label, "O"))
                     current_preds.append(ID2LABEL.get(pred, "O"))
-            
             if current_labels and current_preds:
                 decoded_labels.append(current_labels)
                 decoded_preds.append(current_preds)
-
+        
         if not decoded_preds or not decoded_labels:
             print("Warning: No valid predictions or labels found!")
             return {"precision": 0.0, "recall": 0.0, "f1": 0.0}

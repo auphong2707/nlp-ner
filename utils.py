@@ -38,27 +38,28 @@ def load_jsonl(file_path) -> list:
         return [json.loads(line) for line in file]
 
 # Preprocessing function: Tokenize and align labels
-def tokenize_and_align_labels(example, tokenizer=None):
-    if tokenizer is None:
-        raise ValueError("Tokenizer is None. Make sure it is properly initialized.")
-
+def tokenize_and_align_labels(examples, tokenizer):
     tokenized_inputs = tokenizer(
-        example["tokens"], truncation=True, padding="max_length", is_split_into_words=True
+        examples["tokens"],
+        truncation=True,
+        is_split_into_words=True,
+        padding="max_length",
+        max_length=512
     )
-
     labels = []
-    word_ids = tokenized_inputs.word_ids()  # Map tokens back to word indices
-    previous_word_idx = None
-
-    for word_idx in word_ids:
-        if word_idx is None:
-            labels.append(31)  # Padding tokens
-        elif word_idx != previous_word_idx:
-            labels.append(example["ner_tags"][word_idx])  # First token of a word
-        else:
-            labels.append(31)  # Subsequent subword tokens
-        previous_word_idx = word_idx
-
+    for i, label in enumerate(examples["ner_tags"]):
+        word_ids = tokenized_inputs.word_ids(batch_index=i)
+        label_ids = []
+        previous_word_idx = None
+        for word_idx in word_ids:
+            if word_idx is None:
+                label_ids.append(-100)
+            elif word_idx != previous_word_idx:
+                label_ids.append(label[word_idx])
+            else:
+                label_ids.append(-100)
+            previous_word_idx = word_idx
+        labels.append(label_ids)
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 

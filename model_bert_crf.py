@@ -20,38 +20,27 @@ class Bert_CRF(BertPreTrainedModel):
         # CRF layer
         self.crf = CRF(num_labels, batch_first=True)  # batch_first=True để phù hợp với định dạng đầu vào của BERT
     
-    def forward(self, input_ids, attention_mask, labels=None):
-        # Lấy đầu ra từ BERT
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        sequence_output = outputs.last_hidden_state  # [batch_size, seq_length, hidden_size]
-        sequence_output = self.dropout(sequence_output)
-
-        # Tính logits qua lớp fully connected
-        logits = self.fc(sequence_output)  # [batch_size, seq_length, num_labels]
-
-        # Chuyển attention_mask sang kiểu bool (yêu cầu của pytorch-crf)
-        mask = attention_mask.bool()
-
-        # Giải mã chuỗi tối ưu bằng Viterbi
-        predictions = self.crf.decode(logits, mask=mask)  # Trả về list các chuỗi nhãn tốt nhất
-
-        # Chuyển predictions thành tensor
-        max_len = logits.size(1)
-        pred_tensor = torch.full((logits.size(0), max_len), 31, dtype=torch.long, device=logits.device)
-        for i, pred_seq in enumerate(predictions):
-            valid_len = sum(mask[i]).item()  # Số token hợp lệ dựa trên mask
-            pred_tensor[i, :valid_len] = torch.tensor(pred_seq, dtype=torch.long, device=logits.device)
-
-        if labels is not None:
-            for i in range(logits.size(0)):  # Duyệt qua từng mẫu trong batch
-                valid_labels = labels[i][mask[i]]  # Lấy nhãn tại các vị trí mask=True
-                if not torch.all((valid_labels >= 0) & (valid_labels < self.num_labels)):
-                    print(f"Invalid label found in batch {i}: {valid_labels}")
-                    raise ValueError("Nhãn không hợp lệ trong batch")
-            loss = -self.crf(logits, labels, mask=mask, reduction='mean')
-        else:
-            return {"logits": logits, "predictions": pred_tensor}
-
+def forward(self, input_ids, attention_mask, labels=None):
+    outputs = self.bert(input_ids, attention_mask=attention_mask)
+    sequence_output = outputs.last_hidden_state
+    sequence_output = self.dropout(sequence_output)
+    logits = self.fc(sequence_output)
+    
+    mask = attention_mask.bool()
+    
+    if labels is not None:
+        # Kiểm tra nhãn hợp lệ
+        for i in range(logits.size(0)):
+            valid_labels = labels[i][mask[i]]
+            if not torch.all((valid_labels >= 0) & (valid_labels < self.num_labels)):
+                raise ValueError(f"Nhãn không hợp lệ trong batch {i}: {valid_labels}")
+        
+        loss = -self.crf(logits, labels, mask=mask, reduction='mean')
+        predictions = self.crf.decode(logits, mask=mask)
+        return {"loss": loss, "logits": logits, "predictions": predictions}
+    else:
+        predictions = self.crf.decode(logits, mask=mask)
+        return {"logits": logits, "predictions": predictions}
 
 
 
