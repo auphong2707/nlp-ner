@@ -83,7 +83,7 @@ if __name__ == '__main__':
             current_preds = []
 
             for label, pred in zip(label_seq, pred_seq):
-                if label != -100:  # Bỏ qua các giá trị đệm
+                if label != 31:  # Bỏ qua các giá trị đệm
                     current_labels.append(ID2LABEL.get(label, "O"))
                     current_preds.append(ID2LABEL.get(pred, "O"))
             

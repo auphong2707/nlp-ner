@@ -52,11 +52,11 @@ def tokenize_and_align_labels(example, tokenizer=None):
 
     for word_idx in word_ids:
         if word_idx is None:
-            labels.append(-100)  # Padding tokens
+            labels.append(31)  # Padding tokens
         elif word_idx != previous_word_idx:
             labels.append(example["ner_tags"][word_idx])  # First token of a word
         else:
-            labels.append(-100)  # Subsequent subword tokens
+            labels.append(31)  # Subsequent subword tokens
         previous_word_idx = word_idx
 
     tokenized_inputs["labels"] = labels

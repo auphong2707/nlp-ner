@@ -37,7 +37,7 @@ class Bert_CRF(BertPreTrainedModel):
 
         # Chuyển predictions thành tensor
         max_len = logits.size(1)
-        pred_tensor = torch.full((logits.size(0), max_len), -100, dtype=torch.long, device=logits.device)
+        pred_tensor = torch.full((logits.size(0), max_len), 31, dtype=torch.long, device=logits.device)
         for i, pred_seq in enumerate(predictions):
             valid_len = sum(mask[i]).item()  # Số token hợp lệ dựa trên mask
             pred_tensor[i, :valid_len] = torch.tensor(pred_seq, dtype=torch.long, device=logits.device)
