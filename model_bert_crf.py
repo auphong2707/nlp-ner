@@ -43,9 +43,12 @@ class Bert_CRF(BertPreTrainedModel):
             pred_tensor[i, :valid_len] = torch.tensor(pred_seq, dtype=torch.long, device=logits.device)
 
         if labels is not None:
-            # Tính negative log-likelihood loss từ CRF
-            loss = -self.crf(logits, labels, mask=mask, reduction='mean')  # reduction='mean' để trả về scalar
-            return {"loss": loss, "logits": logits, "predictions": pred_tensor}
+            for i in range(logits.size(0)):  # Duyệt qua từng mẫu trong batch
+                valid_labels = labels[i][mask[i]]  # Lấy nhãn tại các vị trí mask=True
+                if not torch.all((valid_labels >= 0) & (valid_labels < self.num_labels)):
+                    print(f"Invalid label found in batch {i}: {valid_labels}")
+                    raise ValueError("Nhãn không hợp lệ trong batch")
+            loss = -self.crf(logits, labels, mask=mask, reduction='mean')
         else:
             return {"logits": logits, "predictions": pred_tensor}
 
