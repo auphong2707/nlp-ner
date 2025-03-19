@@ -38,29 +38,36 @@ def load_jsonl(file_path) -> list:
         return [json.loads(line) for line in file]
 
 # Preprocessing function: Tokenize and align labels
-def tokenize_and_align_labels(examples, tokenizer):
+def tokenize_and_align_labels(example, tokenizer):
+    # Tokenize the input tokens
     tokenized_inputs = tokenizer(
-        examples["tokens"],
+        example["tokens"],
         truncation=True,
         is_split_into_words=True,
         padding="max_length",
-        max_length=512
+        max_length=512  # Adjust as needed
     )
-    labels = []
-    for i, label in enumerate(examples["ner_tags"]):
-        word_ids = tokenized_inputs.word_ids(batch_index=i)
-        label_ids = []
-        previous_word_idx = None
-        for word_idx in word_ids:
-            if word_idx is None:
-                label_ids.append(-100)
-            elif word_idx != previous_word_idx:
-                label_ids.append(label[word_idx])
-            else:
-                label_ids.append(-100)
-            previous_word_idx = word_idx
-        labels.append(label_ids)
-    tokenized_inputs["labels"] = labels
+    
+    # Get the word IDs to align tokens with original words
+    word_ids = tokenized_inputs.word_ids(batch_index=0)  # Single example, so batch_index=0
+    label_ids = []
+    previous_word_idx = None
+    
+    # Align labels with tokenized inputs
+    for word_idx in word_ids:
+        if word_idx is None:
+            # Special tokens like [CLS], [SEP], [PAD]
+            label_ids.append(-100)
+        elif word_idx != previous_word_idx:
+            # First token of a word, use the corresponding label
+            label_ids.append(example["ner_tags"][word_idx])
+        else:
+            # Subword token, ignore with -100
+            label_ids.append(-100)
+        previous_word_idx = word_idx
+    
+    # Attach labels to tokenized inputs
+    tokenized_inputs["labels"] = label_ids
     return tokenized_inputs
 
 def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
