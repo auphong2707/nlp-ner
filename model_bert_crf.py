@@ -31,17 +31,33 @@ class Bert_CRF(BertPreTrainedModel):
 
         # Chuyển attention_mask sang kiểu bool (yêu cầu của pytorch-crf)
         mask = attention_mask.bool()
-        # return logits
 
         # Giải mã chuỗi tối ưu bằng Viterbi
         predictions = self.crf.decode(logits, mask=mask)  # Trả về list các chuỗi nhãn tốt nhất
 
+        # Chuyển predictions thành tensor
+        max_len = logits.size(1)
+        pred_tensor = torch.full((logits.size(0), max_len), -100, dtype=torch.long, device=logits.device)
+        for i, pred_seq in enumerate(predictions):
+            valid_len = sum(mask[i]).item()  # Số token hợp lệ dựa trên mask
+            pred_tensor[i, :valid_len] = torch.tensor(pred_seq, dtype=torch.long, device=logits.device)
+
         if labels is not None:
             # Tính negative log-likelihood loss từ CRF
             loss = -self.crf(logits, labels, mask=mask, reduction='mean')  # reduction='mean' để trả về scalar
-            return {"loss": loss, "logits": logits, "predictions": predictions}
+            return {"loss": loss, "logits": logits, "predictions": pred_tensor}
         else:
-            return {"logits": logits, "predictions": predictions}
+            return {"logits": logits, "predictions": pred_tensor}
+
+
+
+
+
+
+
+
+
+
 
 # # Ví dụ sử dụng
 if __name__ == "__main__":
@@ -62,4 +78,4 @@ if __name__ == "__main__":
     # Gọi forward không có labels
     output = model(input_ids, attention_mask)
     print("Predictions:", output["predictions"])
-    print("Shape of logits:", output["logits"].shape)
+    print("Logits:", output["logits"].shape)

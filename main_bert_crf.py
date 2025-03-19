@@ -154,38 +154,8 @@ if __name__ == '__main__':
         # dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
     )
 
-    # def preprocess_logits_for_metrics(model_output, labels):
-    #     logits = model_output["logits"]
-    #     return logits.argmax(dim=-1)
     def preprocess_logits_for_metrics(model_output, labels):
-        print("Model output type:", type(model_output))
-        print("Model output keys:", model_output.keys())
-        logits = model_output["logits"]
-        # predictions = model_output["predictions"]
-        # print("Logits shape:", logits.shape)
-        # print("Predictions sample:", predictions[:2])  # In 2 mẫu đầu tiên
-        
-        # batch_size, max_seq_len = logits.size(0), logits.size(1)
-        # pred_tensor = torch.full(
-        #     (batch_size, max_seq_len), 
-        #     -100, 
-        #     dtype=torch.long, 
-        #     device=logits.device
-        # )
-        
-        # for i, pred_seq in enumerate(predictions):
-        #     valid_len = min(len(pred_seq), max_seq_len)
-        #     pred_tensor[i, :valid_len] = torch.tensor(
-        #         pred_seq[:valid_len], 
-        #         dtype=torch.long, 
-        #         device=logits.device
-        #     )
-        
-        # print("Output tensor shape:", pred_tensor.shape)
-        # print("Output tensor sample:", pred_tensor[:2])
-        # return pred_tensor
-        # return logits
-        return logits.argmax(dim=-1)
+        return model_output["predictions"]
     # Create Trainer instance
     trainer = Trainer(
         model=model,
