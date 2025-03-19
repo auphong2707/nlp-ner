@@ -47,7 +47,7 @@ def tokenize_and_align_labels(example, tokenizer):
         padding="max_length",
         max_length=512  # Adjust as needed
     )
-    
+
     # Get the word IDs to align tokens with original words
     word_ids = tokenized_inputs.word_ids(batch_index=0)  # Single example, so batch_index=0
     label_ids = []

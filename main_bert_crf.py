@@ -104,6 +104,7 @@ if __name__ == '__main__':
         fp16=True,
         seed=SEED,
         max_grad_norm=1.0,
+        remove_unused_columns=False,
         # gradient_accumulation_steps=2,  # Giúp tăng batch size ảo mà không tiêu tốn thêm RAM GPU
         # optim="adamw_torch",  # Dùng AdamW tối ưu hơn
         # dataloader_num_workers=4,  # Giúp load dữ liệu nhanh hơn
