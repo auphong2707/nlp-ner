@@ -1,3 +1,6 @@
+from constants import *
+from utils import set_seed, prepare_dataset
+set_seed(SEED)
 import os
 import platform
 
@@ -8,12 +11,9 @@ import wandb, huggingface_hub, evaluate
 from transformers import TrainingArguments, Trainer, BertConfig
 
 from model_bert_crf import Bert_CRF
-from constants import *
-from utils import set_seed, prepare_dataset
 # Set seed for reproducibility
 torch.set_num_threads(4) 
 if __name__ == '__main__':
-    set_seed(SEED)
 
 
     "[PREPARING DATASET AND FUNCTIONS]"
