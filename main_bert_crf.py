@@ -46,13 +46,8 @@ def compute_metrics(eval_pred):
         print("Warning: No valid predictions or labels found!")
         return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
     
-    result = metric.compute(predictions=decoded_preds, references=decoded_labels)
-    return {
-        "precision": result["overall_precision"],
-        "recall": result["overall_recall"],
-        "f1": result["overall_f1"]
-    }
-
+    return metric.compute(predictions=decoded_preds, references=decoded_labels)
+    
 "[SETTING UP MODEL AND TRAINING ARGUMENTS]"
 # Create results directory if not exists
 os.makedirs(EXPERIMENT_RESULTS_BERT_CRF_DIR, exist_ok=True)
@@ -95,7 +90,7 @@ training_args = TrainingArguments(
     output_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR,
     logging_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR + "/logs",
     logging_steps=LOGGING_STEPS,
-    load_best_model_at_end="f1",
+    load_best_model_at_end="eval_overall_f1",
     greater_is_better=True,
     save_total_limit=2,
     fp16=True,
