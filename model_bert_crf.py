@@ -36,7 +36,9 @@ class Bert_CRF(BertPreTrainedModel):
         if labels is not None:
             # Training: Mask is 1 only where labels != -100
             crf_mask = (labels != -100).long()  # Convert boolean to 0/1 tensor
-            loss = -self.crf(emissions, labels, mask=crf_mask, reduction='mean')
+            tags = labels.clone()
+            tags[labels == -100] = 0    
+            loss = -self.crf(emissions, tags, mask=crf_mask, reduction='mean')
             return {"loss": loss, "logits": emissions}
         else:
             # Prediction: Use attention_mask
