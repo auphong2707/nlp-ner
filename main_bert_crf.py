@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer
 import wandb, huggingface_hub, evaluate
-from transformers import TrainingArguments, Trainer
+from transformers import TrainingArguments, Trainer, BertConfig
 
 from model_bert_crf import Bert_CRF
 from constants import *
@@ -75,7 +75,8 @@ if __name__ == '__main__':
     if checkpoint:
         model = Bert_CRF.from_pretrained(checkpoint)
     else:
-        model = Bert_CRF(MODEL_BERT_CRF,num_labels=len(ID2LABEL),
+        config = BertConfig.from_pretrained(MODEL_BERT_CRF)  # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
+        model = Bert_CRF(config=config,num_labels=len(ID2LABEL),
                         #  ignore_mismatched_sizes=True,
                         )
 
