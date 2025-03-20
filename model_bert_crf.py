@@ -25,8 +25,10 @@ class Bert_CRF(BertPreTrainedModel):
         emissions = self.classifier(sequence_output)  # [batch_size, seq_length, num_labels]
 
         if labels is not None:
-            crf_mask = (labels != -100).long()
-            loss = -self.crf(emissions, labels, mask=crf_mask, reduction='mean')
+            crf_mask = (labels != -100).bool()  # Convert boolean to 0/1 tensor
+            tags = labels.clone()
+            tags[labels == -100] = 0    
+            loss = -self.crf(emissions, tags, mask=crf_mask, reduction='mean')
             if not self.training:
                 # Evaluation mode: compute predictions
                 mask = attention_mask.bool() if attention_mask is not None else None
