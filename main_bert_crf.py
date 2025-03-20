@@ -75,7 +75,7 @@ if __name__ == '__main__':
     if checkpoint:
         model = Bert_CRF.from_pretrained(checkpoint)
     else:
-        model = Bert_CRF.from_pretrained(MODEL_BERT_CRF,num_labels=len(ID2LABEL),
+        model = Bert_CRF(MODEL_BERT_CRF,num_labels=len(ID2LABEL),
                         #  ignore_mismatched_sizes=True,
                         )
 
