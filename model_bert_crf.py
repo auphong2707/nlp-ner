@@ -13,14 +13,7 @@ class Bert_CRF(BertPreTrainedModel):
         self.num_labels = num_labels
         self.init_weights()
 
-    def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        labels=None,
-        **kwargs  # Catch any extra arguments
-    ):
+    def forward(self, input_ids=None, attention_mask=None, token_type_ids=None, labels=None, **kwargs):
         # Get BERT outputs
         outputs = self.bert(
             input_ids=input_ids,
@@ -29,19 +22,29 @@ class Bert_CRF(BertPreTrainedModel):
         )
         sequence_output = outputs[0]  # [batch_size, seq_length, hidden_size]
         sequence_output = self.dropout(sequence_output)
-
-        # Pass through classifier to get emissions
         emissions = self.classifier(sequence_output)  # [batch_size, seq_length, num_labels]
 
         if labels is not None:
-            # Training: Mask is 1 only where labels != -100
-            crf_mask = (labels != -100).bool()  # Convert boolean to 0/1 tensor
-            tags = labels.clone()
-            tags[labels == -100] = 0    
-            loss = -self.crf(emissions, tags, mask=crf_mask, reduction='mean')
-            return {"loss": loss, "logits": emissions}
+            crf_mask = (labels != -100).long()
+            loss = -self.crf(emissions, labels, mask=crf_mask, reduction='mean')
+            if not self.training:
+                # Evaluation mode: compute predictions
+                mask = attention_mask.bool() if attention_mask is not None else None
+                predictions = self.crf.decode(emissions, mask=mask)
+                # Pad predictions to max_length
+                batch_size, max_len, _ = emissions.shape
+                pred_tensor = torch.full(
+                    (batch_size, max_len), -100, dtype=torch.long, device=emissions.device
+                )
+                for i, pred in enumerate(predictions):
+                    if len(pred) > 0:
+                        pred_tensor[i, :len(pred)] = torch.tensor(pred, dtype=torch.long, device=emissions.device)
+                return {"loss": loss, "logits": pred_tensor}
+            else:
+                # Training mode
+                return {"loss": loss, "logits": emissions}
         else:
-            # Prediction: Use attention_mask
+            # Inference mode
             mask = attention_mask.bool() if attention_mask is not None else None
             predictions = self.crf.decode(emissions, mask=mask)
             return {"logits": emissions, "predictions": predictions}
