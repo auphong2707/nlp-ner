@@ -1,8 +1,3 @@
-import torch
-import torch.nn as nn
-from torchcrf import CRF
-from transformers import BertModel, BertPreTrainedModel
-
 class Bert_CRF(BertPreTrainedModel):
     def __init__(self, config, num_labels):
         super().__init__(config)
@@ -33,20 +28,13 @@ class Bert_CRF(BertPreTrainedModel):
         # Pass through classifier to get emissions
         emissions = self.classifier(sequence_output)  # [batch_size, seq_length, num_labels]
 
-        # Ensure mask is boolean for CRF
-        mask = attention_mask.bool() if attention_mask is not None else None
-
         if labels is not None:
-            # Compute CRF loss
-            loss = -self.crf(emissions, labels, mask=mask, reduction='mean')
+            # Training: Mask is 1 only where labels != -100
+            crf_mask = (labels != -100).long()  # Convert boolean to 0/1 tensor
+            loss = -self.crf(emissions, labels, mask=crf_mask, reduction='mean')
             return {"loss": loss, "logits": emissions}
         else:
-            # Decode predictions without labels
+            # Prediction: Use attention_mask
+            mask = attention_mask.bool() if attention_mask is not None else None
             predictions = self.crf.decode(emissions, mask=mask)
             return {"logits": emissions, "predictions": predictions}
-
-# Example instantiation (adjust as needed)
-if __name__ == "__main__":
-    from transformers import BertConfig
-    config = BertConfig.from_pretrained("bert-base-cased")
-    model = Bert_CRF(config, num_labels=31)  # Adjust num_labels based on your ID2LABEL
