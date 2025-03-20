@@ -1,3 +1,8 @@
+import torch
+import torch.nn as nn
+from torchcrf import CRF
+from transformers import BertModel, BertPreTrainedModel
+
 class Bert_CRF(BertPreTrainedModel):
     def __init__(self, config, num_labels):
         super().__init__(config)
