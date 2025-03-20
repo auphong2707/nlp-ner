@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # Load checkpoint if available
     def get_last_checkpoint(ouput_dir):
         if not os.path.exists(ouput_dir):
-            return None # No checkpoint if directory does not exist
+            return None # No checkpoint if direxctory does not exist
         checkpoints = [d for d in os.listdir(ouput_dir) if d.startswith("checkpoint")]
         if checkpoints:
             last_checkpoint = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))[-1]
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     if checkpoint:
         model = Bert_CRF.from_pretrained(checkpoint)
     else:
-        model = Bert_CRF(MODEL_BERT_CRF,num_labels=len(ID2LABEL),
+        model = Bert_CRF.from_pretrained(MODEL_BERT_CRF,num_labels=len(ID2LABEL),
                         #  ignore_mismatched_sizes=True,
                         )
 
