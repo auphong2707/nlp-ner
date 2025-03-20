@@ -113,7 +113,7 @@ if __name__ == '__main__':
     )
 
     def preprocess_logits_for_metrics(model_output, labels):
-        return model_output
+        return model_output.argmax(dim=-1)
     # Create Trainer instance
     trainer = Trainer(
         model=model,
