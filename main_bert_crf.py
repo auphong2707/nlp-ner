@@ -79,7 +79,7 @@ model.to(device)
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_BERT_CRF,
     report_to="wandb" if platform.system() != "Windows" else None,
-    tqdm_output_mode="dynamic_ncols",  # Cập nhật trên một dòng thay vì nhiều dòng
+    # tqdm_output_mode="dynamic_ncols",  # Cập nhật trên một dòng thay vì nhiều dòng
     eval_strategy='steps',
     save_strategy='steps',
     eval_steps=EVAL_STEPS_BERT_CRF,
