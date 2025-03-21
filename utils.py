@@ -57,8 +57,8 @@ def tokenize_and_align_labels(example, tokenizer):
             label_ids.append(31)
         previous_word_idx = word_idx
     # Set the label for [CLS] to 0
-    # if len(label_ids) > 0:
-    #     label_ids[0] = 0  # Assign 'O' or a valid label to [CLS]
+    if len(label_ids) > 0:
+        label_ids[0] = 0  # Assign 'O' or a valid label to [CLS]
     tokenized_inputs["labels"] = label_ids
     return tokenized_inputs
 
