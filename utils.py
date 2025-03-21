@@ -44,7 +44,6 @@ def tokenize_and_align_labels(example, tokenizer):
         truncation=True,
         is_split_into_words=True,
         padding="max_length",
-        is_split_into_words=True
     )
     label_ids = []
     word_ids = tokenized_inputs.word_ids(batch_index=0)
