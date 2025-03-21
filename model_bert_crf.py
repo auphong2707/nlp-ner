@@ -25,9 +25,9 @@ class Bert_CRF(BertPreTrainedModel):
         emissions = self.classifier(sequence_output)  # [batch_size, seq_length, num_labels]
 
         if labels is not None:
-            crf_mask = (labels != -100).bool()  # Convert boolean to 0/1 tensor
+            crf_mask = (labels != 31).bool()  # Convert boolean to 0/1 tensor
             tags = labels.clone()
-            tags[labels == -100] = 0    
+            tags[labels == 31] = 0    
             loss = -self.crf(emissions, tags, mask=crf_mask, reduction='mean')
             if not self.training:
                 # Evaluation mode: compute predictions
@@ -36,7 +36,7 @@ class Bert_CRF(BertPreTrainedModel):
                 # Pad predictions to max_length
                 batch_size, max_len, _ = emissions.shape
                 pred_tensor = torch.full(
-                    (batch_size, max_len), -100, dtype=torch.long, device=emissions.device
+                    (batch_size, max_len), 31, dtype=torch.long, device=emissions.device
                 )
                 for i, pred in enumerate(predictions):
                     if len(pred) > 0:

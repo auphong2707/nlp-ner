@@ -35,16 +35,17 @@ def compute_metrics(eval_pred):
         current_labels = []
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
-            if label != -100:
+            if label != 31:
                 current_labels.append(ID2LABEL.get(label, "O"))
                 current_preds.append(ID2LABEL.get(pred, "O"))
-        if current_labels and current_preds:
-            decoded_labels.append(current_labels)
-            decoded_preds.append(current_preds)
-    
-    if not decoded_preds or not decoded_labels:
-        print("Warning: No valid predictions or labels found!")
-        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+        # if current_labels and current_preds:
+        decoded_labels.append(current_labels)
+        decoded_preds.append(current_preds)
+
+    # if not decoded_preds or not decoded_labels:
+    #     print("Warning: No valid predictions or labels found!")
+    #     e
+    #     return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
     
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
     

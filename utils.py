@@ -44,22 +44,22 @@ def tokenize_and_align_labels(example, tokenizer):
         truncation=True,
         is_split_into_words=True,
         padding="max_length",
-        max_length=512
+        is_split_into_words=True
     )
-    word_ids = tokenized_inputs.word_ids(batch_index=0)
     label_ids = []
+    word_ids = tokenized_inputs.word_ids(batch_index=0)
     previous_word_idx = None
     for word_idx in word_ids:
         if word_idx is None:
-            label_ids.append(-100)
+            label_ids.append(31)
         elif word_idx != previous_word_idx:
             label_ids.append(example["ner_tags"][word_idx])
         else:
-            label_ids.append(-100)
+            label_ids.append(31)
         previous_word_idx = word_idx
     # Set the label for [CLS] to 0
-    if len(label_ids) > 0:
-        label_ids[0] = 0  # Assign 'O' or a valid label to [CLS]
+    # if len(label_ids) > 0:
+    #     label_ids[0] = 0  # Assign 'O' or a valid label to [CLS]
     tokenized_inputs["labels"] = label_ids
     return tokenized_inputs
 
