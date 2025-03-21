@@ -7,3 +7,4 @@ seqeval
 transformers[torch]
 accelerate==1.5.2
 optree==0.13.0
+tqdm
