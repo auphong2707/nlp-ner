@@ -80,7 +80,6 @@ model.to(device)
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_BERT_CRF,
     report_to="wandb" if platform.system() != "Windows" else None,
-    logging_steps=100,  # Chỉ log sau mỗi 100 step thay vì quá thường xuyên
     eval_strategy='steps',
     save_strategy='steps',
     eval_steps=EVAL_STEPS_BERT_CRF,
