@@ -3,7 +3,7 @@ This file contains all the constants used in the project.
 """
 
 RESULTS_DIR = "./results/"
-LOGGING_STEPS = 110
+LOGGING_STEPS = 220
 SEED = 42
 
 ID2LABEL = {
