@@ -125,9 +125,7 @@ else:
     trainer.train()
 
 "[EVALUATING]"
-test_results = trainer.evaluate(test_dataset, metric_key_prefix="test",
-                                disable_tqdm=False,
-                                )
+test_results = trainer.evaluate(test_dataset, metric_key_prefix="test",)
 
 "[SAVING THINGS]"
 # save model, tokenizer, and training results
