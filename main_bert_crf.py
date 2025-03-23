@@ -5,7 +5,7 @@ set_seed(SEED)
 
 import torch
 
-import wandb, huggingface_hub, os, platform, tqdm
+import wandb, huggingface_hub, os, platform
 import evaluate
 from transformers import TrainingArguments, Trainer, BertConfig
 
@@ -13,7 +13,6 @@ from model_bert_crf import Bert_CRF
 
 "[PREPARING DATASET AND FUNCTIONS]"
 # Login to wandb & Hugging Face
-tqdm.auto.tqdm = tqdm.tqdm  # Đảm bảo `tqdm` hoạt động đúng
 if platform.system() != "Windows":
     wandb.login(key=os.getenv("WANDB_API_KEY"))
     huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
