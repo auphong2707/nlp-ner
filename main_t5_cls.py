@@ -35,8 +35,8 @@ def compute_metrics(eval_pred):
     ]
 
     # Debugging: Check the actual results for true predictions and labels
-    print(f"True Predictions: {true_predictions[:5]}")
-    print(f"True Labels: {true_labels[:5]}")
+    # print(f"True Predictions: {true_predictions[:5]}")
+    # print(f"True Labels: {true_labels[:5]}")
 
     # Set zero_division to handle cases where recall and f1 are undefined
     results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
