@@ -12,7 +12,7 @@ wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Prepare the dataset and tokenizer
-train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_ROBERTA_CLS)
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_ROBERTA_CLS, True)
 
 # Define compute_metrics function
 metric = evaluate.load("seqeval")
@@ -25,7 +25,7 @@ def compute_metrics(eval_pred):
         current_labels = []
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
-            if label != -100:  # Ignore padding tokens
+            if label != 31:  # Ignore padding tokens
                 current_labels.append(ID2LABEL[label])
                 current_preds.append(ID2LABEL[pred])
         decoded_labels.append(current_labels)
@@ -34,7 +34,7 @@ def compute_metrics(eval_pred):
 
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
-os.makedirs(EXPERIMENT_RESULTS_DIR, exist_ok=True)
+os.makedirs(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR, exist_ok=True)
 
 # Load model
 def get_last_checkpoint(output_dir):
@@ -101,11 +101,11 @@ model.save_pretrained(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR)
 tokenizer.save_pretrained(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR)
 
 # Save training arguments
-with open(EXPERIMENT_RESULTS_DIR + "/training_args.txt", "w") as f:
+with open(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
 # Save test results
-with open(EXPERIMENT_RESULTS_DIR + "/test_results.txt", "w") as f:
+with open(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 # Upload to Hugging Face
