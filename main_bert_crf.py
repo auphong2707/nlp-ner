@@ -63,14 +63,13 @@ def get_last_checkpoint(ouput_dir):
         return os.path.join(ouput_dir,last_checkpoint)
     return None
 
+config = BertConfig.from_pretrained(MODEL_BERT_CRF)
+config.num_labels = num_labels=len(ID2LABEL)   # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 if checkpoint:
-    model = Bert_CRF.from_pretrained(checkpoint,num_labels=len(ID2LABEL))
+    model = Bert_CRF.from_pretrained(checkpoint)
 else:
-    config = BertConfig.from_pretrained(MODEL_BERT_CRF)  # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
-    model = Bert_CRF(config=config,num_labels=len(ID2LABEL),
-                    #  ignore_mismatched_sizes=True,
-                    )
+    model = Bert_CRF(config=config)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
