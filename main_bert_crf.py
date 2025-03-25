@@ -65,7 +65,7 @@ def get_last_checkpoint(ouput_dir):
 
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 if checkpoint:
-    model = Bert_CRF.from_pretrained(checkpoint)
+    model = Bert_CRF.from_pretrained(checkpoint,num_labels=len(ID2LABEL))
 else:
     config = BertConfig.from_pretrained(MODEL_BERT_CRF)  # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
     model = Bert_CRF(config=config,num_labels=len(ID2LABEL),
