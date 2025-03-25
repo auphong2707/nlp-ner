@@ -74,7 +74,7 @@ model.to("cuda")
 
 # Create Training Arguments
 training_args = TrainingArguments(
-    run_name=EXPERIMENT_NAME,
+    run_name=EXPERIMENT_NAME_T5,
     report_to="wandb",
     evaluation_strategy="steps",
     save_strategy="steps",
