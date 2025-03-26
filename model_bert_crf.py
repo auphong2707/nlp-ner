@@ -42,6 +42,20 @@ class Bert_CRF(BertPreTrainedModel):
             min_idx = raw_loss.argmin()
             print("Min NLL:", min_nll.item())
             print("Index of min NLL:", min_idx.item())
+            numerator = self.crf._compute_score(emissions, tags, crf_mask)    # Score của tags
+            denominator = self.crf._compute_normalizer(emissions, crf_mask)   # Log Z
+            print("\nNumerator (score) per sample:", numerator)
+            print("Denominator (log Z) per sample:", denominator)
+
+            print("Emissions contains NaN:", torch.isnan(emissions).any().item())
+            print("Emissions contains Inf:", torch.isinf(emissions).any().item())
+
+            print("Emissions min:", emissions.min().item())
+            print("Emissions max:", emissions.max().item())
+
+            print("Emissions shape:", emissions.shape)
+            print("Tags shape:", tags.shape)
+            print("Mask shape:", crf_mask.shape)
 
             if loss <0: 
                 print(f"loss: {loss}")
