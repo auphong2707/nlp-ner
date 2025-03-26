@@ -31,6 +31,20 @@ class Bert_CRF(BertPreTrainedModel):
             tags = labels.clone()
             tags[labels == 31] = 0    
             loss = -self.crf(emissions, tags, mask=crf_mask, reduction='mean')
+            if loss <0: 
+                print(f"loss: {loss}")
+                print(f"input_ids: {input_ids}")
+                print(f"attention_mask: {attention_mask}")
+                print(f"token_type_ids: {token_type_ids}")
+                print(f"labels: {labels}")
+                print(f"outputs: {outputs}")
+                print(f"temp_sequence_output: {temp_sequence_output}")
+                print(f"sequence_output: {sequence_output}")
+                print(f"emissions: {emissions}")
+                print(f"crf_mask: {crf_mask}")
+                predictions = self.crf.decode(emissions, mask=mask)
+                print(f"predictions: {predictions}")
+                exit()
             if not self.training:
                 # Evaluation mode: compute predictions
                 mask = attention_mask.bool() if attention_mask is not None else None
