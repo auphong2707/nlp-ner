@@ -31,6 +31,18 @@ class Bert_CRF(BertPreTrainedModel):
             tags = labels.clone()
             tags[labels == 31] = 0    
             loss = -self.crf(emissions, tags, mask=crf_mask, reduction='mean')
+            raw_loss_neg = -self.crf(emissions, tags, mask=crf_mask, reduction='none')
+            min_nll = raw_loss_neg.min()
+            min_idx = raw_loss_neg.argmin()
+            print("Min minus NLL:", min_nll.item())
+            print("Index of min minus NLL:", min_idx.item())
+
+            raw_loss = self.crf(emissions, tags, mask=crf_mask, reduction='none')
+            min_nll = raw_loss.min()
+            min_idx = raw_loss.argmin()
+            print("Min NLL:", min_nll.item())
+            print("Index of min NLL:", min_idx.item())
+
             if loss <0: 
                 print(f"loss: {loss}")
                 print(f"input_ids: {input_ids}")
