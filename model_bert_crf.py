@@ -34,7 +34,7 @@ class Bert_CRF(BertPreTrainedModel):
             raw_loss_neg = -self.crf(emissions, tags, mask=crf_mask, reduction='none')
             min_nll = raw_loss_neg.min()
             min_idx = raw_loss_neg.argmin()
-            print("Min minus NLL:", min_nll.item())
+            print("\nMin minus NLL:", min_nll.item())
             print("Index of min minus NLL:", min_idx.item())
 
             raw_loss = self.crf(emissions, tags, mask=crf_mask, reduction='none')
