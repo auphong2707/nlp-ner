@@ -22,6 +22,7 @@ class Bert_CRF(BertPreTrainedModel):
             token_type_ids=token_type_ids
         )
         sequence_output = outputs[0]  # [batch_size, seq_length, hidden_size]
+        temp_sequence_output = sequence_output
         sequence_output = self.dropout(sequence_output)
         emissions = self.classifier(sequence_output)  # [batch_size, seq_length, num_labels]
 
@@ -42,7 +43,7 @@ class Bert_CRF(BertPreTrainedModel):
                 for i, pred in enumerate(predictions):
                     if len(pred) > 0:
                         pred_tensor[i, :len(pred)] = torch.tensor(pred, dtype=torch.long, device=emissions.device)
-                return {"loss": loss, "logits": pred_tensor}
+                return {"loss": loss, "pred_tensor": pred_tensor}
             else:
                 # Training mode
                 return {"loss": loss, "logits": emissions}
