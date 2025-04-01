@@ -9,7 +9,7 @@ import wandb, huggingface_hub, os, platform
 import evaluate
 from transformers import TrainingArguments, Trainer, BertConfig
 
-from model_bert_crf import Bert_CRF
+from models.model_bert_crf import BertCRF
 
 "[PREPARING DATASET AND FUNCTIONS]"
 # Login to wandb & Hugging Face
@@ -67,9 +67,9 @@ config = BertConfig.from_pretrained(MODEL_BERT_CRF)
 config.num_labels = num_labels=len(ID2LABEL)   # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 if checkpoint:
-    model = Bert_CRF.from_pretrained(checkpoint,config=config)
+    model = BertCRF.from_pretrained(checkpoint,config=config)
 else:
-    model = Bert_CRF(config=config)
+    model = BertCRF(config=config)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
