@@ -26,7 +26,7 @@ metric = evaluate.load("seqeval")
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
     
-    preds = preds["predictions"]
+    print(type(preds), type(labels))
     
     preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
     labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
