@@ -109,6 +109,11 @@ training_args = TrainingArguments(
 )
 
 # Create Trainer instance
+def preprocess_logits_for_metrics(model_output):
+    print("Check Preprocess logits for metrics")
+    print(type(model_output))
+    print(model_output.shape)
+
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -116,6 +121,7 @@ trainer = Trainer(
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
 )
 
 "[TRAINING]"
