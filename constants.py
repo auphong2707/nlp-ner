@@ -59,8 +59,8 @@ EVAL_STEPS_BERT = 373
 SAVE_STEPS_BERT = 373
 
 # [3. BERT CRF HYPERPARAMETERS]
-MODEL_BERT_CRF = "google-bert/bert-small"
-TOKENIZER_BERT_CRF = "google-bert/bert-small"
+MODEL_BERT_CRF = "google-bert/bert-base-cased"
+TOKENIZER_BERT_CRF = "google-bert/bert-base-cased"
 
 RESULTS_BERT_CRF_DIR = RESULTS_DIR + "bert-crf/"
 EXPERIMENT_NAME_BERT_CRF = "bert+crf-veil-debug"
