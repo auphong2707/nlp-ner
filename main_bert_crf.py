@@ -73,6 +73,7 @@ else:
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
+torch.compile(model)  # Compile the model for better performance
 
 # Setup Training Arguments
 training_args = TrainingArguments(
