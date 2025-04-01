@@ -37,8 +37,8 @@ def compute_metrics(eval_pred):
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
             if label != 31:
-                current_labels.append(ID2LABEL.get(label, "O"))
-                current_preds.append(ID2LABEL.get(pred, "O"))
+                current_labels.append(ID2LABEL.get(label))
+                current_preds.append(ID2LABEL.get(pred))
         # if current_labels and current_preds:
         decoded_labels.append(current_labels)
         decoded_preds.append(current_preds)
