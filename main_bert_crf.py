@@ -25,6 +25,9 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
+    
+    preds = preds["predictions"]
+    
     preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
     labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
     
@@ -104,8 +107,6 @@ training_args = TrainingArguments(
     # dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
 )
 
-def preprocess_logits_for_metrics(model_output, labels):
-    return model_output
 # Create Trainer instance
 trainer = Trainer(
     model=model,
@@ -113,7 +114,6 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
-    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
 
