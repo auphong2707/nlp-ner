@@ -79,7 +79,7 @@ torch.compile(model)  # Compile the model for better performance
 # Setup Training Arguments
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_BERT_CRF,
-    report_to="wandb" if platform.system() != "Windows" else None,
+    report_to="wandb",
     eval_strategy='steps',
     save_strategy='steps',
     eval_steps=EVAL_STEPS_BERT_CRF,
@@ -92,17 +92,12 @@ training_args = TrainingArguments(
     output_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR,
     logging_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR + "/logs",
     logging_steps=LOGGING_STEPS,
-    load_best_model_at_end="eval_overall_f1",
+    load_best_model_at_end=True,
+    metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
     save_total_limit=2,
     fp16=True,
-    seed=SEED,
-    max_grad_norm=1.0,
-    remove_unused_columns=False,
-    # gradient_accumulation_steps=2,  # Giúp tăng batch size ảo mà không tiêu tốn thêm RAM GPU
-    # optim="adamw_torch",  # Dùng AdamW tối ưu hơn
-    # dataloader_num_workers=4,  # Giúp load dữ liệu nhanh hơn
-    # dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
+    seed=SEED
 )
 
 # Create Trainer instance
