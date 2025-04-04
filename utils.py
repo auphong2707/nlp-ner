@@ -4,6 +4,9 @@ import random
 import numpy as np
 import torch
 import shutil
+import platform
+from functools import partial
+
 
 from transformers import AutoTokenizer
 from datasets import Dataset
@@ -35,24 +38,28 @@ def load_jsonl(file_path) -> list:
         return [json.loads(line) for line in file]
 
 # Preprocessing function: Tokenize and align labels
-def tokenize_and_align_labels(example):
-    # Tokenize while telling the tokenizer that the input is already split into words.
-    tokenized_inputs = TOKENIZER(example["tokens"], truncation=True, padding="max_length", is_split_into_words=True)
-    labels = []
-    word_ids = tokenized_inputs.word_ids()  # Map tokens back to word indices
+def tokenize_and_align_labels(example, tokenizer):
+    tokenized_inputs = tokenizer(
+        example["tokens"],
+        truncation=True,
+        is_split_into_words=True,
+        padding="max_length",
+    )
+    label_ids = []
+    word_ids = tokenized_inputs.word_ids(batch_index=0)
     previous_word_idx = None
     for word_idx in word_ids:
-        # Special tokens have a word_id of None, so set the label to 31 to ignore them during loss computation.
         if word_idx is None:
-            labels.append(31)
-        # For the first token of a given word, assign the label.
+            label_ids.append(31)
         elif word_idx != previous_word_idx:
-            labels.append(example["ner_tags"][word_idx])
-        # For subsequent tokens in a word, assign 31 so that we only predict once per word.
+            label_ids.append(example["ner_tags"][word_idx])
         else:
-            labels.append(31)
+            label_ids.append(31)
         previous_word_idx = word_idx
-    tokenized_inputs["labels"] = labels
+    # Set the label for [CLS] to 0
+    if len(label_ids) > 0:
+        label_ids[0] = 0  # Assign 'O' or a valid label to [CLS]
+    tokenized_inputs["labels"] = label_ids
     return tokenized_inputs
 
 def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
@@ -107,9 +114,13 @@ def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoToke
     test_dataset = Dataset.from_list(test_data)
     
     # Tokenize the data
-    train_dataset = train_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=train_dataset.column_names)
-    val_dataset = val_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=val_dataset.column_names)
-    test_dataset = test_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=test_dataset.column_names)
+    num_proc = 2 if platform.system() == "Windows" else 4
+    # num_proc = 2
+    tokenization_fn = partial(tokenize_and_align_labels, tokenizer=TOKENIZER)
+
+    train_dataset = train_dataset.map(tokenization_fn, batched=False, remove_columns=train_dataset.column_names,num_proc=num_proc)
+    val_dataset = val_dataset.map(tokenization_fn, batched=False, remove_columns=val_dataset.column_names,num_proc=num_proc)
+    test_dataset = test_dataset.map(tokenization_fn, batched=False, remove_columns=test_dataset.column_names,num_proc=num_proc)
     
     return train_dataset, val_dataset, test_dataset, TOKENIZER
 

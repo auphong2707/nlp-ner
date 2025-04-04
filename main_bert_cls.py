@@ -19,7 +19,7 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
-    print(preds.shape, labels.shape)
+    print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
 
     decoded_labels = []
     decoded_preds = []
@@ -62,7 +62,7 @@ else:
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME,
     report_to="wandb",
-    evaluation_strategy='steps',
+    eval_strategy='steps',
     save_strategy='steps',
     eval_steps=EVAL_STEPS_BERT,
     save_steps=SAVE_STEPS_BERT,
