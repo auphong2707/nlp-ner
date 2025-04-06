@@ -63,7 +63,7 @@ MODEL_BERT_CRF = "google-bert/bert-base-cased"
 TOKENIZER_BERT_CRF = "google-bert/bert-base-cased"
 
 RESULTS_BERT_CRF_DIR = RESULTS_DIR + "bert-crf/"
-EXPERIMENT_NAME_BERT_CRF = "bert+crf-veil-debug-experiment-2"
+EXPERIMENT_NAME_BERT_CRF = "bert+crf-experiment-1"
 EXPERIMENT_RESULTS_BERT_CRF_DIR = RESULTS_BERT_CRF_DIR + EXPERIMENT_NAME_BERT_CRF
 
 LR_BERT_CRF = 1e-4
