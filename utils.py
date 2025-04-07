@@ -77,7 +77,11 @@ def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoToke
     """
     # Load the tokenizer
     global TOKENIZER
-    TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
+    if "roberta" in tokenizer_name.lower():
+        TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name, add_prefix_space=True)
+    else:
+        TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
+
     
     # Load data and split it into 3 sets: train, validation, and test
     if not os.path.exists("data"):
