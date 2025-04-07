@@ -9,7 +9,7 @@ import wandb, huggingface_hub, os, platform
 import evaluate
 from transformers import TrainingArguments, Trainer, BertConfig
 
-from model_bert_crf import Bert_CRF
+from models.model_bert_crf import BertCRF
 
 "[PREPARING DATASET AND FUNCTIONS]"
 # Login to wandb & Hugging Face
@@ -25,6 +25,7 @@ metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
+    
     preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
     labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
     
@@ -36,8 +37,8 @@ def compute_metrics(eval_pred):
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
             if label != 31:
-                current_labels.append(ID2LABEL.get(label, "O"))
-                current_preds.append(ID2LABEL.get(pred, "O"))
+                current_labels.append(ID2LABEL[label])
+                current_preds.append(ID2LABEL[pred])
         # if current_labels and current_preds:
         decoded_labels.append(current_labels)
         decoded_preds.append(current_preds)
@@ -67,17 +68,18 @@ config = BertConfig.from_pretrained(MODEL_BERT_CRF)
 config.num_labels = num_labels=len(ID2LABEL)   # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BERT_CRF_DIR)
 if checkpoint:
-    model = Bert_CRF.from_pretrained(checkpoint,config=config)
+    model = BertCRF.from_pretrained(checkpoint,config=config)
 else:
-    model = Bert_CRF(config=config)
+    model = BertCRF(config=config)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
+torch.compile(model)  # Compile the model for better performance
 
 # Setup Training Arguments
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_BERT_CRF,
-    report_to="wandb" if platform.system() != "Windows" else None,
+    report_to="wandb",
     eval_strategy='steps',
     save_strategy='steps',
     eval_steps=EVAL_STEPS_BERT_CRF,
@@ -90,30 +92,26 @@ training_args = TrainingArguments(
     output_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR,
     logging_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR + "/logs",
     logging_steps=LOGGING_STEPS,
-    load_best_model_at_end="eval_overall_f1",
+    load_best_model_at_end=True,
+    metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
     save_total_limit=2,
     fp16=True,
-    seed=SEED,
-    max_grad_norm=1.0,
-    remove_unused_columns=False,
-    # gradient_accumulation_steps=2,  # Giúp tăng batch size ảo mà không tiêu tốn thêm RAM GPU
-    # optim="adamw_torch",  # Dùng AdamW tối ưu hơn
-    # dataloader_num_workers=4,  # Giúp load dữ liệu nhanh hơn
-    # dataloader_pin_memory=True,  # Đẩy tensor vào pinned memory giúp CPU -> GPU nhanh hơn
+    seed=SEED
 )
 
-def preprocess_logits_for_metrics(model_output, labels):
-    return model_output
 # Create Trainer instance
+def preprocess_logits_for_metrics(preds, labels):
+    return preds.argmax(dim=-1)
+
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
-    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
 )
 
 "[TRAINING]"
