@@ -63,7 +63,7 @@ MODEL_BERT_CLS = "google-bert/bert-base-cased"
 TOKENIZER_BERT_CLS = "google-bert/bert-base-cased"
 
 RESULTS_DIR_BERT_CLS = RESULTS_DIR + "bert-cls/"
-EXPERIMENT_NAME_BERT_CLS = "bert-cls-experiment-1"
+EXPERIMENT_NAME_BERT_CLS = "bert-cls-focal-experiment-1"
 EXPERIMENT_RESULTS_DIR_BERT_CLS = RESULTS_DIR_BERT_CLS + EXPERIMENT_NAME_BERT_CLS
 
 LR_BERT_CLS = 8e-5
