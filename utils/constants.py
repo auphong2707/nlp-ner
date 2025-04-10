@@ -8,6 +8,7 @@ import torch
 RESULTS_DIR = "./results/"
 LOGGING_STEPS = 11
 SEED = 42
+GAMMA = 2.0
 
 ID2LABEL = {
     0: "O",
