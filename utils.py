@@ -11,8 +11,26 @@ from datasets import Dataset
 from huggingface_hub import hf_hub_download
 from typing import Tuple
 
-# Set seed for reproducibility
 def set_seed(seed: int = 42):
+    """
+    Sets the random seed for various libraries to ensure reproducibility.
+
+    This function sets the seed for Python's `random` module, NumPy, and PyTorch.
+    It also configures PyTorch to ensure deterministic behavior in computations,
+    which is particularly useful for debugging and reproducibility in machine
+    learning experiments.
+
+    Args:
+        seed (int, optional): The seed value to use for random number generation.
+                              Defaults to 42.
+
+    Notes:
+        - Setting `torch.backends.cudnn.deterministic` to `True` ensures that
+          convolution operations are deterministic, but may reduce performance.
+        - Setting `torch.backends.cudnn.benchmark` to `False` disables the
+          auto-tuner that selects the best algorithm for the hardware, which
+          also helps with reproducibility.
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -36,7 +54,29 @@ def load_jsonl(file_path) -> list:
     with open(file_path, 'r') as file:
         return [json.loads(line) for line in file]
 
+
 def download_dataset():
+    """
+    Downloads and organizes the MultiNERD dataset into train, validation, and test sets.
+
+    This function checks if the "data" directory exists and creates it if necessary. 
+    It then downloads the train, validation, and test JSONL files from the Hugging Face 
+    Hub if they are not already present in the "data" directory. After downloading, 
+    it removes any unnecessary cache files and reorganizes the directory structure 
+    by moving all files to the "data" directory and removing any empty subdirectories.
+
+    Dependencies:
+        - os
+        - shutil
+        - hf_hub_download (from huggingface_hub)
+
+    Raises:
+        - Any exceptions raised by `hf_hub_download`, `os`, or `shutil` operations.
+
+    Note:
+        Ensure that the `hf_hub_download` function from the `huggingface_hub` library 
+        is available in your environment before using this function.
+    """
     # Load data and split it into 3 sets: train, validation, and test
     if not os.path.exists("data"):
         os.mkdir("data")
@@ -56,8 +96,26 @@ def download_dataset():
             for dir in dirs:
                 os.rmdir(os.path.join(root, dir))
 
-# Preprocessing function: Tokenize and align labels
+
 def tokenize_and_align_labels(example):
+    """
+    Tokenizes input text and aligns the corresponding labels for Named Entity Recognition (NER) tasks.
+
+    This function tokenizes the input text while preserving the word boundaries and aligns the NER tags 
+    with the tokenized output. Special tokens and subword tokens are ignored during loss computation by 
+    assigning them a label of -100.
+
+    Args:
+        example (dict): A dictionary containing:
+            - "tokens" (list of str): The list of words in the input text.
+            - "ner_tags" (list of int): The list of NER tag indices corresponding to each word.
+
+    Returns:
+        dict: A dictionary containing:
+            - Tokenized inputs with keys such as "input_ids", "attention_mask", etc.
+            - "labels" (list of int): The aligned NER tags for the tokenized inputs, with -100 for 
+              special tokens and subword tokens.
+    """
     # Tokenize while telling the tokenizer that the input is already split into words.
     tokenized_inputs = TOKENIZER(example["tokens"], truncation=True, padding="max_length", is_split_into_words=True)
     labels = []
@@ -77,18 +135,18 @@ def tokenize_and_align_labels(example):
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
+
 def prepare_dataset(tokenizer_name, add_prefix_space=False) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
     """
-    Prepares the dataset for training and validation.
-
-    This function performs the following steps:
-    1. Downloads the dataset from the Hugging Face repository.
-    2. Loads the training and validation data from JSONL files.
-    3. Converts the loaded data into Dataset objects.
-    4. Tokenizes the data using a specified tokenizer.
-
+    Prepares the dataset for training, validation, and testing by loading, processing, 
+    and tokenizing the data.
+    Args:
+        tokenizer_name (str): The name or path of the tokenizer to be loaded.
+        add_prefix_space (bool, optional): Whether to add a prefix space for tokenizers 
+            that require it (e.g., GPT-2). Defaults to False.
     Returns:
-        tuple: A tuple containing the tokenized training dataset, validation dataset, and the tokenizer.
+        Tuple[Dataset, Dataset, Dataset, AutoTokenizer]: A tuple containing the processed 
+        training dataset, validation dataset, testing dataset, and the loaded tokenizer.
     """
     # Load the tokenizer
     global TOKENIZER
@@ -123,8 +181,22 @@ def prepare_dataset(tokenizer_name, add_prefix_space=False) -> Tuple[Dataset, Da
     
     return train_dataset, val_dataset, test_dataset, TOKENIZER
 
-# Tokenization and alignment for T5
+
 def tokenize_t5(example):
+    """
+    Tokenizes input data for a T5 model and aligns the tokenized sequence with NER (Named Entity Recognition) tags.
+
+    Args:
+        example (dict): A dictionary containing the following keys:
+            - "tokens" (list of str): A list of tokens representing the input text.
+            - "ner_tags" (list of int): A list of integer NER tags corresponding to each token.
+
+    Returns:
+        dict: A dictionary containing the tokenized inputs with the following keys:
+            - "input_ids" (list of int): Token IDs of the input sequence.
+            - "attention_mask" (list of int): Attention mask indicating which tokens are padding.
+            - "labels" (list of int): Aligned NER tags for each token, with -100 for special tokens and padding.
+    """
     tokenized_inputs = TOKENIZER(
         example["tokens"],  # No need to concatenate strings, keep as a list of tokens
         truncation=True,
@@ -144,8 +216,30 @@ def tokenize_t5(example):
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
-# Prepare dataset for T5
+
 def prepare_dataset_t5(tokenizer_name):
+    """
+    Prepares datasets for training, validation, and testing using the T5 tokenizer.
+
+    This function initializes a global tokenizer, downloads the dataset if not already present,
+    loads the data from JSONL files, converts it into a Hugging Face Dataset format, and tokenizes
+    the data for use with the T5 model.
+
+    Args:
+        tokenizer_name (str): The name or path of the pre-trained tokenizer to load.
+
+    Returns:
+        tuple: A tuple containing the tokenized training, validation, and test datasets, 
+               along with the initialized tokenizer.
+
+    Notes:
+        - The function assumes the presence of JSONL files named "train_en.jsonl", 
+          "val_en.jsonl", and "test_en.jsonl" in the "data" directory.
+        - The datasets are tokenized using the `tokenize_t5` function, and the columns 
+          "tokens" and "ner_tags" are removed during the process.
+        - The number of processes used for tokenization is determined by the number of 
+          available CPU cores.
+    """
     global TOKENIZER
     TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
 
