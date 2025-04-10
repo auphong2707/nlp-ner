@@ -26,6 +26,7 @@ class FocalLossMultiClass(nn.Module):
         log_pt = (log_probs * targets_one_hot).sum(dim=-1)
 
         if self.alpha is not None:
+            targets = targets.to(self.alpha.device)
             at = self.alpha[targets]
             loss = -at * ((1 - pt) ** self.gamma) * log_pt
         else:
