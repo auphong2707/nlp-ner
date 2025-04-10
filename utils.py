@@ -56,7 +56,7 @@ def tokenize_and_align_labels(example):
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
-def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
+def prepare_dataset(tokenizer_name, add_prefix_space=False) -> Tuple[Dataset, Dataset, Dataset, AutoTokenizer]:
     """
     Prepares the dataset for training and validation.
 
@@ -71,7 +71,10 @@ def prepare_dataset(tokenizer_name) -> Tuple[Dataset, Dataset, Dataset, AutoToke
     """
     # Load the tokenizer
     global TOKENIZER
-    TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
+    if add_prefix_space:
+        TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name, add_prefix_space=add_prefix_space)
+    else:
+        TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
     
     # Load data and split it into 3 sets: train, validation, and test
     if not os.path.exists("data"):
