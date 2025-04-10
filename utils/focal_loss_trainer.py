@@ -11,6 +11,8 @@ class FocalLossMultiClass(nn.Module):
         self.reduction = reduction
 
     def forward(self, inputs, targets):
+        device = inputs.device  # Ensure all tensors go to the same device
+
         inputs = inputs.view(-1, inputs.size(-1))  # [N, C]
         targets = targets.view(-1)                 # [N]
 
@@ -18,16 +20,18 @@ class FocalLossMultiClass(nn.Module):
         inputs = inputs[mask]
         targets = targets[mask]
 
+        targets = targets.to(device)  # ✅ Ensure targets are on the same device
         log_probs = F.log_softmax(inputs, dim=-1)
         probs = torch.exp(log_probs)
-        targets_one_hot = F.one_hot(targets, num_classes=inputs.size(-1)).float()
+
+        targets_one_hot = F.one_hot(targets, num_classes=inputs.size(-1)).float().to(device)  # ✅ to same device
 
         pt = (probs * targets_one_hot).sum(dim=-1)
         log_pt = (log_probs * targets_one_hot).sum(dim=-1)
 
         if self.alpha is not None:
-            targets = targets.to(self.alpha.device)
-            at = self.alpha[targets]
+            alpha = self.alpha.to(device)  # ✅ Move class weights to same device
+            at = alpha[targets]
             loss = -at * ((1 - pt) ** self.gamma) * log_pt
         else:
             loss = -((1 - pt) ** self.gamma) * log_pt
@@ -38,6 +42,7 @@ class FocalLossMultiClass(nn.Module):
             return loss.sum()
         else:
             return loss
+
 
 class FocalLossTrainer(Trainer):
     def __init__(self, *args, alpha, gamma, **kwargs):
