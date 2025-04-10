@@ -1,5 +1,5 @@
-from constants import *
-from utils import set_seed, prepare_dataset
+from utils.constants import *
+from utils.functions import set_seed, prepare_dataset
 # Set seed for reproducibility
 set_seed(SEED)
 

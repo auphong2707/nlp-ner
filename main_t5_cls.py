@@ -1,5 +1,5 @@
-from constants import *
-from utils import set_seed, prepare_dataset_t5
+from utils.constants import *
+from utils.functions import set_seed, prepare_dataset_t5
 set_seed(SEED)
 
 import numpy as np
@@ -23,6 +23,7 @@ def compute_metrics(eval_pred):
     logits, labels = eval_pred
     logits = np.nan_to_num(logits)
     predictions = np.argmax(logits, axis=-1)
+
 
     # Ignore special tokens (-100)
     true_predictions = [
