@@ -2,6 +2,7 @@ import os
 import json
 import random
 import numpy as np
+from sklearn.utils import compute_class_weight
 import torch
 import shutil
 
@@ -9,7 +10,6 @@ from transformers import AutoTokenizer
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
 from typing import Tuple
-from constants import ID2LABEL
 
 # Set seed for reproducibility
 def set_seed(seed: int = 42):
@@ -21,6 +21,7 @@ def set_seed(seed: int = 42):
     torch.backends.cudnn.benchmark = False  # Disables auto-tuning for reproducibility
 
 TOKENIZER = None
+
 
 def load_jsonl(file_path) -> list:
     """
@@ -167,3 +168,39 @@ def prepare_dataset_t5(tokenizer_name):
     test_dataset = test_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
 
     return train_dataset, val_dataset, test_dataset, TOKENIZER
+
+
+def get_class_weights():
+    """
+    Computes and returns normalized class weights for NER (Named Entity Recognition) tags 
+    based on the distribution of labels in the training, validation, and test datasets.
+    The function performs the following steps:
+    1. Loads the training, validation, and test datasets from JSONL files.
+    2. Extracts NER tags (labels) from the datasets.
+    3. Computes class weights using the 'balanced' strategy to handle class imbalance.
+    4. Normalizes the computed weights so that their sum equals the number of unique classes.
+    Returns:
+        torch.Tensor: A tensor containing the normalized class weights for each unique class.
+    """
+    
+    train_data = load_jsonl("data/train_en.jsonl")
+    val_data = load_jsonl("data/val_en.jsonl")
+    test_data = load_jsonl("data/test_en.jsonl")
+
+    def extract_labels(data):
+        labels = []
+        for item in data:
+            labels.extend(item["ner_tags"])
+        return labels
+
+    labels = extract_labels(train_data) + extract_labels(val_data) + extract_labels(test_data)
+    print(len(labels))
+
+    classes = np.unique(labels)
+
+    weights = compute_class_weight('balanced', classes=classes, y=labels)
+    weights = torch.tensor(weights, dtype=torch.float32)
+
+    normalized_weights = weights / weights.sum() * len(classes)
+
+    return normalized_weights

@@ -2,6 +2,9 @@
 This file contains all the constants used in the project.
 """
 
+import torch
+
+
 RESULTS_DIR = "./results/"
 LOGGING_STEPS = 11
 SEED = 42
@@ -43,6 +46,16 @@ ID2LABEL = {
 
 # Label to ID mapping
 LABEL2ID = {label: idx for idx, label in ID2LABEL.items()}
+
+# NER class weights
+NER_CLASS_WEIGHTS = torch.tensor([
+    1.8400e-04, 7.5585e-03, 7.1658e-03, 1.6998e-02, 1.2870e-02, 7.2909e-03,
+    1.6852e-02, 3.7005e-02, 8.4086e-02, 3.5347e+00, 1.4683e+01, 2.0306e-01,
+    3.7648e-01, 5.1329e-02, 7.5774e-02, 1.8030e-01, 1.0705e-01, 5.2223e-02,
+    1.4170e-01, 1.3473e+00, 1.4424e+00, 7.6780e-02, 4.6879e-02, 8.7157e-01,
+    4.8942e+00, 6.0213e-02, 1.8098e-01, 1.8173e-01, 2.3536e-01, 1.1097e+00,
+    9.5756e-01
+], dtype=torch.float32)
 
 # [1. BERT CLASSIFICATION HYPERPARAMETERS]
 MODEL_BERT_NER = "google-bert/bert-base-cased"
