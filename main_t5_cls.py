@@ -2,6 +2,8 @@ from utils.constants import *
 from utils.functions import set_seed, prepare_dataset_t5
 set_seed(SEED)
 
+from utils.focal_loss_trainer import FocalLossTrainer
+
 import numpy as np
 import wandb, huggingface_hub, os
 import evaluate
@@ -98,7 +100,7 @@ training_args = TrainingArguments(
 )
 
 # Trainer 
-trainer = Trainer(
+trainer = FocalLossTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
@@ -106,6 +108,8 @@ trainer = Trainer(
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
     data_collator=data_collator,
+    alpha=NER_CLASS_WEIGHTS,
+    gamma=GAMMA,
 )
 
 # Train

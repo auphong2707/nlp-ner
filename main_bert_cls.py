@@ -2,6 +2,8 @@ from utils.constants import *
 from utils.functions import set_seed, prepare_dataset
 set_seed(SEED)
 
+from utils.focal_loss_trainer import FocalLossTrainer
+
 import wandb, huggingface_hub, os
 import evaluate
 from transformers import TrainingArguments, Trainer, BertForTokenClassification, AutoTokenizer
@@ -86,7 +88,7 @@ def preprocess_logits_for_metrics(logits, labels):
     return logits.argmax(dim=-1)
 
 # Create Trainer
-trainer = Trainer(
+trainer = FocalLossTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
@@ -94,6 +96,8 @@ trainer = Trainer(
     tokenizer=tokenizer,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
+    alpha=NER_CLASS_WEIGHTS,
+    gamma=GAMMA,
 )
 
 # [TRAINING]
