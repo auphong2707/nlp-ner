@@ -35,6 +35,26 @@ def load_jsonl(file_path) -> list:
     with open(file_path, 'r') as file:
         return [json.loads(line) for line in file]
 
+def download_dataset():
+    # Load data and split it into 3 sets: train, validation, and test
+    if not os.path.exists("data"):
+        os.mkdir("data")
+
+    if not os.path.exists("data/train_en.jsonl") or not os.path.exists("data/val_en.jsonl") or not os.path.exists("data/test_en.jsonl"):
+        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="train/train_en.jsonl", repo_type="dataset", local_dir="data/")
+        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="val/val_en.jsonl", repo_type="dataset", local_dir="data/")
+        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="test/test_en.jsonl", repo_type="dataset", local_dir="data/")
+
+        shutil.rmtree(os.path.join("data", ".cache"))
+
+        for root, dirs, files in os.walk("data"):
+            for file in files:
+                shutil.move(os.path.join(root, file), "data")
+
+        for root, dirs, files in os.walk("data"):
+            for dir in dirs:
+                os.rmdir(os.path.join(root, dir))
+
 # Preprocessing function: Tokenize and align labels
 def tokenize_and_align_labels(example):
     # Tokenize while telling the tokenizer that the input is already split into words.
@@ -75,25 +95,10 @@ def prepare_dataset(tokenizer_name, add_prefix_space=False) -> Tuple[Dataset, Da
         TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name, add_prefix_space=add_prefix_space)
     else:
         TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
-    
-    # Load data and split it into 3 sets: train, validation, and test
-    if not os.path.exists("data"):
-        os.mkdir("data")
 
-    if not os.path.exists("data/train_en.jsonl") or not os.path.exists("data/val_en.jsonl") or not os.path.exists("data/test_en.jsonl"):
-        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="train/train_en.jsonl", repo_type="dataset", local_dir="data/")
-        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="val/val_en.jsonl", repo_type="dataset", local_dir="data/")
-        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="test/test_en.jsonl", repo_type="dataset", local_dir="data/")
 
-        shutil.rmtree(os.path.join("data", ".cache"))
-
-        for root, dirs, files in os.walk("data"):
-            for file in files:
-                shutil.move(os.path.join(root, file), "data")
-
-        for root, dirs, files in os.walk("data"):
-            for dir in dirs:
-                os.rmdir(os.path.join(root, dir))
+    # Download dataset if not already present
+    download_dataset()
 
     # Load data
     train_data = load_jsonl("data/train_en.jsonl")
@@ -143,42 +148,22 @@ def prepare_dataset_t5(tokenizer_name):
     global TOKENIZER
     TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
 
-    # Load data and split it into 3 sets: train, validation, and test
-    if not os.path.exists("data"):
-        os.mkdir("data")
+    # Download dataset if not already present
+    download_dataset()
 
-    if not os.path.exists("data/train_en.jsonl") or not os.path.exists("data/val_en.jsonl") or not os.path.exists("data/test_en.jsonl"):
-        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="train/train_en.jsonl", repo_type="dataset", local_dir="data/")
-        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="val/val_en.jsonl", repo_type="dataset", local_dir="data/")
-        file_path = hf_hub_download(repo_id="Babelscape/multinerd", filename="test/test_en.jsonl", repo_type="dataset", local_dir="data/")
-
-        shutil.rmtree(os.path.join("data", ".cache"))
-
-        for root, dirs, files in os.walk("data"):
-            for file in files:
-                shutil.move(os.path.join(root, file), "data")
-
-        for root, dirs, files in os.walk("data"):
-            for dir in dirs:
-                os.rmdir(os.path.join(root, dir))
-
+    # Load data
     train_data = load_jsonl("data/train_en.jsonl")
     val_data = load_jsonl("data/val_en.jsonl")
     test_data = load_jsonl("data/test_en.jsonl")
 
+    # Change the format of the data
     train_dataset = Dataset.from_list(train_data)
     val_dataset = Dataset.from_list(val_data)
     test_dataset = Dataset.from_list(test_data)
 
+    # Tokenize the data
     train_dataset = train_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
     val_dataset = val_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
     test_dataset = test_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
 
     return train_dataset, val_dataset, test_dataset, TOKENIZER
-
-
-if __name__ == "__main__":
-    train_dataset, val_dataset, test_dataset, TOKENIZER = prepare_dataset_t5("google/flan-t5-base")
-    print("Train example\n", train_dataset[0])
-    print("Validation example \n", val_dataset[0])
-    print("Test example \n", test_dataset[0]) 
