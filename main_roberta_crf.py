@@ -47,7 +47,7 @@ def compute_metrics(eval_pred):
 
 "[SETTING UP MODEL AND TRAINING ARGUMENTS]"
 # Create results directory if not exists
-os.makedirs(EXPERIMENT_RESULTS_ROBERTA_CRF_DIR, exist_ok=True)
+os.makedirs(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF, exist_ok=True)
 
 # Load checkpoint if available
 def get_last_checkpoint(ouput_dir):
@@ -62,7 +62,7 @@ def get_last_checkpoint(ouput_dir):
 
 config = RobertaConfig.from_pretrained(MODEL_ROBERTA_CRF)
 config.num_labels = num_labels=len(ID2LABEL)
-checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_ROBERTA_CRF_DIR)
+checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF)
 if checkpoint:
     model = RobertaCRF.from_pretrained(checkpoint,config=config)
 else:
@@ -85,8 +85,8 @@ training_args = TrainingArguments(
     num_train_epochs=NUM_TRAIN_EPOCHS_ROBERTA_CRF,
     weight_decay=WEIGHT_DECAY_ROBERTA_CRF,
     learning_rate=LR_ROBERTA_CRF,
-    output_dir=EXPERIMENT_RESULTS_ROBERTA_CRF_DIR,
-    logging_dir=EXPERIMENT_RESULTS_ROBERTA_CRF_DIR + "/logs",
+    output_dir=EXPERIMENT_RESULTS_DIR_ROBERTA_CRF,
+    logging_dir=EXPERIMENT_RESULTS_DIR_ROBERTA_CRF + "/logs",
     logging_steps=LOGGING_STEPS,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
@@ -121,14 +121,14 @@ test_results = trainer.evaluate(test_dataset, metric_key_prefix="test",)
 
 "[SAVING THINGS]"
 # save model, tokenizer, and training results
-model.save_pretrained(EXPERIMENT_RESULTS_ROBERTA_CRF_DIR)
-tokenizer.save_pretrained(EXPERIMENT_RESULTS_ROBERTA_CRF_DIR)
+model.save_pretrained(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF)
+tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF)
 
 #Save training arguments and test results
-with open(EXPERIMENT_RESULTS_ROBERTA_CRF_DIR + "/training_args.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
-with open(EXPERIMENT_RESULTS_ROBERTA_CRF_DIR + "/test_results.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 # upload to huggingface 

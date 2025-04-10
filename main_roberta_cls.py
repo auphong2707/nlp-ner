@@ -36,7 +36,7 @@ def compute_metrics(eval_pred):
 
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
-os.makedirs(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR, exist_ok=True)
+os.makedirs(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS, exist_ok=True)
 
 # Load model
 def get_last_checkpoint(output_dir):
@@ -46,7 +46,7 @@ def get_last_checkpoint(output_dir):
         return os.path.join(output_dir, last_checkpoint)
     return None
 
-checkpoint = get_last_checkpoint(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR)
+checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS)
 if checkpoint:
     model = RobertaForTokenClassification.from_pretrained(checkpoint)
 else:
@@ -54,7 +54,7 @@ else:
 
 # Training arguments
 training_args = TrainingArguments(
-    run_name=EXPERIMENT_ROBERTA_CLS_NAME,
+    run_name=EXPERIMENT_NAME_ROBERTA_CLS,
     report_to="wandb",
     evaluation_strategy='steps',
     save_strategy='steps',
@@ -65,8 +65,8 @@ training_args = TrainingArguments(
     num_train_epochs=NUM_TRAIN_EPOCHS_ROBERTA_CLS,
     weight_decay=WEIGHT_DECAY_ROBERTA_CLS,
     learning_rate=LR_ROBERTA_CLS,
-    output_dir=EXPERIMENT_ROBERTA_CLS_RESULTS_DIR,
-    logging_dir=EXPERIMENT_ROBERTA_CLS_RESULTS_DIR + "/logs",
+    output_dir=EXPERIMENT_RESULTS_DIR_ROBERTA_CLS,
+    logging_dir=EXPERIMENT_RESULTS_DIR_ROBERTA_CLS + "/logs",
     logging_steps=LOGGING_STEPS,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
@@ -101,21 +101,21 @@ else:
 test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
 # Save model and tokenizer
-model.save_pretrained(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR)
-tokenizer.save_pretrained(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR)
+model.save_pretrained(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS)
+tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS)
 
 # Save training arguments
-with open(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR + "/training_args.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
 # Save test results
-with open(EXPERIMENT_ROBERTA_CLS_RESULTS_DIR + "/test_results.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 # Upload to Hugging Face
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
-    folder_path=ROBERTA_CLS_RESULTS_DIR,
+    folder_path=RESULTS_DIR_ROBERTA_CLS,
     repo_id="auphong2707/nlp-ner",
     repo_type="model",
     private=False

@@ -52,7 +52,7 @@ def compute_metrics(eval_pred):
     
 "[SETTING UP MODEL AND TRAINING ARGUMENTS]"
 # Create results directory if not exists
-os.makedirs(EXPERIMENT_RESULTS_BERT_CRF_DIR, exist_ok=True)
+os.makedirs(EXPERIMENT_RESULTS_DIR_BERT_CRF, exist_ok=True)
 
 # Load checkpoint if available
 def get_last_checkpoint(ouput_dir):
@@ -66,7 +66,7 @@ def get_last_checkpoint(ouput_dir):
 
 config = BertConfig.from_pretrained(MODEL_BERT_CRF)
 config.num_labels = num_labels=len(ID2LABEL)   # MODEL_BERT_CRF should be a pretrained model name like "bert-base-uncased"
-checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_BERT_CRF_DIR)
+checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_BERT_CRF)
 if checkpoint:
     model = BertCRF.from_pretrained(checkpoint,config=config)
 else:
@@ -89,8 +89,8 @@ training_args = TrainingArguments(
     num_train_epochs=NUM_TRAIN_EPOCHS_BERT_CRF,
     weight_decay=WEIGHT_DECAY_BERT_CRF,
     learning_rate=LR_BERT_CRF,
-    output_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR,
-    logging_dir=EXPERIMENT_RESULTS_BERT_CRF_DIR + "/logs",
+    output_dir=EXPERIMENT_RESULTS_DIR_BERT_CRF,
+    logging_dir=EXPERIMENT_RESULTS_DIR_BERT_CRF + "/logs",
     logging_steps=LOGGING_STEPS,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
@@ -125,21 +125,21 @@ test_results = trainer.evaluate(test_dataset, metric_key_prefix="test",)
 
 "[SAVING THINGS]"
 # save model, tokenizer, and training results
-model.save_pretrained(EXPERIMENT_RESULTS_BERT_CRF_DIR)
-tokenizer.save_pretrained(EXPERIMENT_RESULTS_BERT_CRF_DIR)
+model.save_pretrained(EXPERIMENT_RESULTS_DIR_BERT_CRF)
+tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_BERT_CRF)
 
 # Save training arguments and test results
-with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/training_args.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_BERT_CRF+"/training_args.txt", "w") as f:
     f.write(str(training_args))
 
-with open(EXPERIMENT_RESULTS_BERT_CRF_DIR+"/test_results.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_BERT_CRF+"/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 # Upload to Hugging Face
 if platform.system() != "Windows":
     api = huggingface_hub.HfApi()
     api.upload_large_folder(
-        folder_path=RESULTS_BERT_CRF_DIR,
+        folder_path=RESULTS_DIR_BERT_CRF,
         repo_id="auphong2707/nlp-ner",
         repo_type="model",
         private=False

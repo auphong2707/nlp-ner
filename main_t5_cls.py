@@ -15,7 +15,7 @@ wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Prepare dataset and tokenizer for T5
-train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CLS)
 data_collator = DataCollatorForTokenClassification(tokenizer)
 
 # Define metric
@@ -54,7 +54,7 @@ def compute_metrics(eval_pred):
     return results
 
 # Create results directory
-os.makedirs(EXPERIMENT_RESULTS_DIR_T5, exist_ok=True)
+os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS, exist_ok=True)
 
 # Load T5 model
 checkpoint = None
@@ -65,31 +65,31 @@ def get_last_checkpoint(output_dir):
         return os.path.join(output_dir, last_checkpoint)
     return None
 
-checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5)
+checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5_CLS)
 
 if checkpoint:
     model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=len(ID2LABEL))
 else:
-    model = T5ForTokenClassification.from_pretrained(MODEL_T5, num_labels=len(ID2LABEL))
+    model = T5ForTokenClassification.from_pretrained(MODEL_T5_CLS, num_labels=len(ID2LABEL))
     model.gradient_checkpointing_enable()
 
 model.to("cuda")
 
 # Create Training Arguments
 training_args = TrainingArguments(
-    run_name=EXPERIMENT_NAME_T5,
+    run_name=EXPERIMENT_NAME_T5_CLS,
     report_to="wandb",
     evaluation_strategy="steps",
     save_strategy="steps",
-    eval_steps=EVAL_STEPS_T5,
-    save_steps=SAVE_STEPS_T5,
-    per_device_train_batch_size=TRAIN_BATCH_SIZE_T5,
-    per_device_eval_batch_size=EVAL_BATCH_SIZE_T5,
-    num_train_epochs=NUM_TRAIN_EPOCHS_T5, 
-    weight_decay=WEIGHT_DECAY_T5,
-    learning_rate=LR_T5, 
-    output_dir=EXPERIMENT_RESULTS_DIR_T5,
-    logging_dir=EXPERIMENT_RESULTS_DIR_T5 + "/logs",
+    eval_steps=EVAL_STEPS_T5_CLS,
+    save_steps=SAVE_STEPS_T5_CLS,
+    per_device_train_batch_size=TRAIN_BATCH_SIZE_T5_CLS,
+    per_device_eval_batch_size=EVAL_BATCH_SIZE_T5_CLS,
+    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CLS, 
+    weight_decay=WEIGHT_DECAY_T5_CLS,
+    learning_rate=LR_T5_CLS, 
+    output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS,
+    logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS + "/logs",
     logging_steps=LOGGING_STEPS,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
@@ -122,21 +122,21 @@ else:
 test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
 # Save model and tokenizer
-model.save_pretrained(EXPERIMENT_RESULTS_DIR_T5)
-tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_T5)
+model.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CLS)
+tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CLS)
 
 # Save training arguments
-with open(EXPERIMENT_RESULTS_DIR_T5 + "/training_args.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_T5_CLS + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
 # Save test results
-with open(EXPERIMENT_RESULTS_DIR_T5 + "/test_results.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_T5_CLS + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 # Upload to Hugging Face
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
-    folder_path=RESULTS_T5_DIR,
+    folder_path=RESULTS_DIR_T5_CLS,
     repo_id="auphong2707/nlp-ner",
     repo_type="model",
     private=False
