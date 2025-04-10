@@ -43,7 +43,7 @@ class FocalLossTrainer(Trainer):
         super().__init__(*args, **kwargs)
         self.focal_loss = FocalLossMultiClass(alpha=alpha, gamma=gamma)
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels = inputs.pop("labels")  # Remove labels for manual loss calculation
         outputs = model(**inputs)
         logits = outputs.logits
