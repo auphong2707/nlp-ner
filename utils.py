@@ -43,15 +43,15 @@ def tokenize_and_align_labels(example):
     word_ids = tokenized_inputs.word_ids()  # Map tokens back to word indices
     previous_word_idx = None
     for word_idx in word_ids:
-        # Special tokens have a word_id of None, so set the label to 31 to ignore them during loss computation.
+        # Special tokens have a word_id of None, so set the label to -100 to ignore them during loss computation.
         if word_idx is None:
-            labels.append(31)
+            labels.append(-100)
         # For the first token of a given word, assign the label.
         elif word_idx != previous_word_idx:
             labels.append(example["ner_tags"][word_idx])
-        # For subsequent tokens in a word, assign 31 so that we only predict once per word.
+        # For subsequent tokens in a word, assign -100 so that we only predict once per word.
         else:
-            labels.append(31)
+            labels.append(-100)
         previous_word_idx = word_idx
     tokenized_inputs["labels"] = labels
     return tokenized_inputs

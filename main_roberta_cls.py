@@ -25,7 +25,7 @@ def compute_metrics(eval_pred):
         current_labels = []
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
-            if label != 31:  # Ignore padding tokens
+            if label != -100:  # Ignore padding tokens
                 current_labels.append(ID2LABEL[label])
                 current_preds.append(ID2LABEL[pred])
         decoded_labels.append(current_labels)

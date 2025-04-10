@@ -36,7 +36,7 @@ def compute_metrics(eval_pred):
         current_labels = []
         current_preds = []
         for label, pred in zip(label_seq, pred_seq):
-            if label != 31:
+            if label != -100:
                 current_labels.append(ID2LABEL[label])
                 current_preds.append(ID2LABEL[pred])
         # if current_labels and current_preds:
