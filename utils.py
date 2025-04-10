@@ -111,9 +111,9 @@ def prepare_dataset(tokenizer_name, add_prefix_space=False) -> Tuple[Dataset, Da
     test_dataset = Dataset.from_list(test_data)
     
     # Tokenize the data
-    train_dataset = train_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=train_dataset.column_names)
-    val_dataset = val_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=val_dataset.column_names)
-    test_dataset = test_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=test_dataset.column_names)
+    train_dataset = train_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=train_dataset.column_names, num_proc=os.cpu_count())
+    val_dataset = val_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=val_dataset.column_names, num_proc=os.cpu_count())
+    test_dataset = test_dataset.map(tokenize_and_align_labels, batched=False, remove_columns=test_dataset.column_names, num_proc=os.cpu_count())
     
     return train_dataset, val_dataset, test_dataset, TOKENIZER
 
@@ -170,9 +170,9 @@ def prepare_dataset_t5(tokenizer_name):
     val_dataset = Dataset.from_list(val_data)
     test_dataset = Dataset.from_list(test_data)
 
-    train_dataset = train_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"])
-    val_dataset = val_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"])
-    test_dataset = test_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"])
+    train_dataset = train_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
+    val_dataset = val_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
+    test_dataset = test_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count())
 
     return train_dataset, val_dataset, test_dataset, TOKENIZER
 
