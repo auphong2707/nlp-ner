@@ -68,9 +68,9 @@ def get_last_checkpoint(output_dir):
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5_CLS)
 
 if checkpoint:
-    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=len(ID2LABEL))
+    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=NUM_LABELS)
 else:
-    model = T5ForTokenClassification.from_pretrained(MODEL_T5_CLS, num_labels=len(ID2LABEL))
+    model = T5ForTokenClassification.from_pretrained(MODEL_T5_CLS, num_labels=NUM_LABELS)
     model.gradient_checkpointing_enable()
 
 model.to("cuda")

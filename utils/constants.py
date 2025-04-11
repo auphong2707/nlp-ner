@@ -9,6 +9,7 @@ RESULTS_DIR = "./results/"
 LOGGING_STEPS = 20
 SEED = 42
 GAMMA = 1.0
+NUM_LABELS = 31
 
 ID2LABEL = {
     0: "O",

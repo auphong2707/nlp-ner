@@ -61,7 +61,7 @@ def get_last_checkpoint(ouput_dir):
     return None # No checkpoint found
 
 config = RobertaConfig.from_pretrained(MODEL_ROBERTA_CRF)
-config.num_labels = num_labels=len(ID2LABEL)
+config.num_labels = num_labels=NUM_LABELS
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF)
 if checkpoint:
     model = RobertaCRF.from_pretrained(checkpoint,config=config)

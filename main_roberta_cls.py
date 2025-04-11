@@ -50,7 +50,7 @@ checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_ROBERTA_CLS)
 if checkpoint:
     model = RobertaForTokenClassification.from_pretrained(checkpoint)
 else:
-    model = RobertaForTokenClassification.from_pretrained(MODEL_ROBERTA_CLS, num_labels=len(ID2LABEL))
+    model = RobertaForTokenClassification.from_pretrained(MODEL_ROBERTA_CLS, num_labels=NUM_LABELS)
 
 # Training arguments
 training_args = TrainingArguments(

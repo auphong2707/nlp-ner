@@ -57,7 +57,7 @@ if checkpoint:
     model = BertForTokenClassification.from_pretrained(checkpoint)
 else:
     model = BertForTokenClassification.from_pretrained(MODEL_BERT_CLS,
-                                                       num_labels=len(ID2LABEL),
+                                                       num_labels=NUM_LABELS,
                                                        ignore_mismatched_sizes=True)
 
 # Create training arguments
