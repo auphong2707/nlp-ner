@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import Trainer
+import wandb
 
 class FocalLossMultiClass(nn.Module):
     def __init__(self, alpha=None, gamma=2.0, reduction='mean'):
@@ -55,5 +56,7 @@ class FocalLossTrainer(Trainer):
         logits = outputs.logits
 
         loss = self.focal_loss(logits, labels)
+
+        wandb.log("train/loss_scaled", loss.item() * 1000)  # Log the scaled loss
 
         return (loss, outputs) if return_outputs else loss
