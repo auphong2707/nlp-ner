@@ -4,11 +4,12 @@ import torch.nn.functional as F
 from transformers import Trainer
 
 class FocalLossMultiClass(nn.Module):
-    def __init__(self, alpha=None, gamma=2.0, reduction='mean'):
+    def __init__(self, alpha=None, gamma=2.0, reduction='mean', loss_scale=1.0):
         super(FocalLossMultiClass, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
         self.reduction = reduction
+        self.loss_scale = loss_scale
 
     def forward(self, inputs, targets):
         device = inputs.device  # Ensure all tensors go to the same device
@@ -37,17 +38,17 @@ class FocalLossMultiClass(nn.Module):
             loss = -((1 - pt) ** self.gamma) * log_pt
 
         if self.reduction == 'mean':
-            return loss.mean()
+            return loss.mean() * self.loss_scale
         elif self.reduction == 'sum':
-            return loss.sum()
+            return loss.sum() * self.loss_scale
         else:
-            return loss
+            return loss * self.loss_scale
 
 
 class FocalLossTrainer(Trainer):
-    def __init__(self, *args, alpha, gamma, **kwargs):
+    def __init__(self, *args, alpha, gamma, loss_scale, **kwargs):
         super().__init__(*args, **kwargs)
-        self.focal_loss = FocalLossMultiClass(alpha=alpha, gamma=gamma)
+        self.focal_loss = FocalLossMultiClass(alpha=alpha, gamma=gamma, loss_scale=loss_scale)
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels = inputs.pop("labels")  # Remove labels for manual loss calculation
