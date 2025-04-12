@@ -14,7 +14,7 @@ wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Prepare the dataset and tokenizer
-train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CLS)
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CLS_FOCAL)
 
 # Define compute_metrics function
 metric = evaluate.load("seqeval")
@@ -42,7 +42,7 @@ def compute_metrics(eval_pred):
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
 # Create experiment results directory
-os.makedirs(EXPERIMENT_RESULTS_DIR_BERT_CLS, exist_ok=True)
+os.makedirs(EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL, exist_ok=True)
 
 # Load model
 def get_last_checkpoint(output_dir):
@@ -52,31 +52,31 @@ def get_last_checkpoint(output_dir):
         return os.path.join(output_dir, last_checkpoint)
     return None
 
-checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_BERT_CLS)
+checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL)
 if checkpoint:
     model = BertForTokenClassification.from_pretrained(checkpoint)
 else:
-    model = BertForTokenClassification.from_pretrained(MODEL_BERT_CLS,
+    model = BertForTokenClassification.from_pretrained(MODEL_BERT_CLS_FOCAL,
                                                        num_labels=NUM_LABELS,
                                                        ignore_mismatched_sizes=True)
 
 # Create training arguments
 training_args = TrainingArguments(
-    run_name=EXPERIMENT_NAME_BERT_CLS,
+    run_name=EXPERIMENT_NAME_BERT_CLS_FOCAL,
     report_to="wandb",
     eval_strategy='steps',
     save_strategy='steps',
-    eval_steps=EVAL_STEPS_BERT_CLS,
-    save_steps=SAVE_STEPS_BERT_CLS,
-    per_device_train_batch_size=TRAIN_BATCH_SIZE_BERT_CLS,
-    per_device_eval_batch_size=EVAL_BATCH_SIZE_BERT_CLS,
-    num_train_epochs=NUM_TRAIN_EPOCHS_BERT_CLS,
-    weight_decay=WEIGHT_DECAY_BERT_CLS,
-    learning_rate=LR_BERT_CLS,
-    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_BERT_CLS,
-    output_dir=EXPERIMENT_RESULTS_DIR_BERT_CLS,
-    logging_dir=EXPERIMENT_RESULTS_DIR_BERT_CLS + "/logs",
-    logging_steps=LOGGING_STEPS,
+    eval_steps=EVAL_STEPS_BERT_CLS_FOCAL,
+    save_steps=SAVE_STEPS_BERT_CLS_FOCAL,
+    per_device_train_batch_size=TRAIN_BATCH_SIZE_BERT_CLS_FOCAL,
+    per_device_eval_batch_size=EVAL_BATCH_SIZE_BERT_CLS_FOCAL,
+    num_train_epochs=NUM_TRAIN_EPOCHS_BERT_CLS_FOCAL,
+    weight_decay=WEIGHT_DECAY_BERT_CLS_FOCAL,
+    learning_rate=LR_BERT_CLS_FOCAL,
+    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_BERT_CLS_FOCAL,
+    output_dir=EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL,
+    logging_dir=EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL + "/logs",
+    logging_steps=LOGGING_STEPS_BERT_CLS_FOCAL,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
@@ -113,21 +113,21 @@ test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
 # [SAVING THINGS]
 # Save the model and tokenizer
-model.save_pretrained(EXPERIMENT_RESULTS_DIR_BERT_CLS)
-tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_BERT_CLS)
+model.save_pretrained(EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL)
+tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL)
 
 # Save the training arguments
-with open(EXPERIMENT_RESULTS_DIR_BERT_CLS + "/training_args.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
 # Save the test results
-with open(EXPERIMENT_RESULTS_DIR_BERT_CLS + "/test_results.txt", "w") as f:
+with open(EXPERIMENT_RESULTS_DIR_BERT_CLS_FOCAL + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 # Upload to Hugging Face
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
-    folder_path=RESULTS_DIR_BERT_CLS,
+    folder_path=RESULTS_DIR_BERT_CLS_FOCAL,
     repo_id="auphong2707/nlp-ner",
     repo_type="model",
     private=False
