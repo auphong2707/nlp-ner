@@ -40,7 +40,7 @@ def compute_metrics(eval_pred):
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
 # Create experiment results directory
-os.makedirs(EXPERIMENT_NAME_BERT_CLS_CE, exist_ok=True)
+os.makedirs(EXPERIMENT_RESULTS_DIR_BERT_CLS_CE, exist_ok=True)
 
 # Load model
 def get_last_checkpoint(output_dir):
