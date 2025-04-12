@@ -77,7 +77,7 @@ EVAL_STEPS_BERT_CLS_CE = 100
 SAVE_STEPS_BERT_CLS_CE = 100
 GRADIENT_ACCUMULATION_STEPS_BERT_CLS_CE = 1
 
-LOGGING_STEPS_BERT_CLS_CE = 100
+LOGGING_STEPS_BERT_CLS_CE = 10
 # --------------------------------------------------------------------------------------------
 
 
