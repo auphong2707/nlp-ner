@@ -140,7 +140,7 @@ EVAL_STEPS_BERT_CLS_FOCAL = 100
 SAVE_STEPS_BERT_CLS_FOCAL = 100
 GRADIENT_ACCUMULATION_STEPS_BERT_CLS_FOCAL = 4
 
-LOGGING_STEPS_BERT_CLS_FOCAL = 100
+LOGGING_STEPS_BERT_CLS_FOCAL = 10
 # --------------------------------------------------------------------------------------------
 
 
