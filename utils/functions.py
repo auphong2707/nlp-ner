@@ -215,7 +215,7 @@ def tokenize_t5(example):
             if 0 <= label_id < NUM_LABELS:
                 labels[i] = label_id
             else:
-                labels[i] = -100  # bỏ nhãn lỗi (phòng trường hợp xấu)
+                labels[i] = -100  
 
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
