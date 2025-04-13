@@ -99,10 +99,10 @@ trainer = Trainer(
 
 # [TRAINING]
 if checkpoint:
-    # torch.serialization.add_safe_globals([
-    #     np.core.multiarray._reconstruct,
-    # ])
-    trainer.train(resume_from_checkpoint=True)
+    torch.serialization.add_safe_globals([
+        np.core.multiarray._reconstruct,
+    ])
+    trainer.train(resume_from_checkpoint=checkpoint)
 else:
     trainer.train()
 
