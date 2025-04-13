@@ -24,6 +24,7 @@ class T5CRF(PreTrainedModel):
         mask = attention_mask.bool() if attention_mask is not None else None
 
         if labels is not None:
+            labels = labels.long()  # ⚠️ ép kiểu về long trước khi dùng CRF
             # Training mode: compute CRF loss
             loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
             return {"loss": loss, "logits": emissions}
