@@ -2,7 +2,8 @@ from utils.constants import *
 from utils.functions import set_seed, prepare_dataset
 set_seed(SEED)
 
-import wandb, huggingface_hub, os
+import wandb, huggingface_hub, os, torch
+import numpy as np
 import evaluate
 from transformers import TrainingArguments, Trainer, BertForTokenClassification
 
@@ -98,6 +99,9 @@ trainer = Trainer(
 
 # [TRAINING]
 if checkpoint:
+    torch.serialization.add_safe_globals({
+        'numpy.core.multiarray._reconstruct': np.core.multiarray._reconstruct,
+    })
     trainer.train(resume_from_checkpoint=checkpoint)
 else:
     trainer.train()
