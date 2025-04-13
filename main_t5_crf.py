@@ -1,5 +1,5 @@
 from utils.constants import *
-from utils.functions import set_seed, prepare_dataset
+from utils.functions import set_seed, prepare_dataset_t5
 
 import torch
 import wandb, huggingface_hub, os, platform
@@ -16,7 +16,7 @@ if platform.system() != "Windows":
     huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Load dataset and tokenizer (chắc chắn TOKENIZER_T5 là tên mô hình T5 ví dụ "t5-small")
-train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_T5)
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
 
 "[METRICS]"
 metric = evaluate.load("seqeval")
