@@ -61,7 +61,7 @@ else:
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-torch.compile(model)
+#torch.compile(model)
 
 "[TRAINING ARGS]"
 training_args = TrainingArguments(
@@ -83,7 +83,7 @@ training_args = TrainingArguments(
     metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
     save_total_limit=2,
-    fp16=True,
+    fp16=False,
     seed=SEED
 )
 
@@ -99,6 +99,9 @@ trainer = Trainer(
     compute_metrics=compute_metrics,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
 )
+
+print("🚀 Starting training now...")
+
 
 "[TRAINING]"
 if checkpoint:
