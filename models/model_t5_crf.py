@@ -1,38 +1,29 @@
-import torch
-import torch.nn as nn
-from transformers import T5EncoderModel, T5Config, PreTrainedModel
 from torchcrf import CRF
+from transformers import T5PreTrainedModel, T5ForTokenClassification
 
-class T5CRF(PreTrainedModel):
-    config_class = T5Config  # để hỗ trợ từ HuggingFace API
-
+class T5CRF(T5PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 
-        self.encoder = T5EncoderModel(config)
-        self.hidden2tag = nn.Linear(config.d_model, config.num_labels)
+        # T5 model adapted for token classification
+        self.t5 = T5ForTokenClassification(config)
         self.crf = CRF(num_tags=config.num_labels, batch_first=True)
 
         self.init_weights()
 
-    def forward(self, input_ids, attention_mask=None, labels=None):
-        encoder_outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
-        sequence_output = encoder_outputs.last_hidden_state  # (batch_size, seq_len, hidden_size)
+    def forward(self, input_ids, attention_mask=None, decoder_input_ids=None, labels=None):
+        outputs = self.t5(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            decoder_input_ids=decoder_input_ids
+        )
 
-        emissions = self.hidden2tag(sequence_output)  # (batch_size, seq_len, num_labels)
-
+        emissions = outputs.logits  # Shape: (batch_size, seq_len, num_labels)
         mask = attention_mask.bool() if attention_mask is not None else None
 
         if labels is not None:
-            # Chuyển -100 thành 0 tạm thời để tránh lỗi index, CRF sẽ dùng mask để bỏ qua
-            labels = labels.clone()
-            labels[labels == -100] = 0
-            labels = labels.long()
-
             loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
             return {"loss": loss, "logits": emissions}
-
         else:
-            # Inference mode: decode best path
             predictions = self.crf.decode(emissions, mask=mask)
             return {"logits": emissions, "predictions": predictions}
