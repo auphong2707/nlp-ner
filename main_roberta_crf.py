@@ -61,7 +61,7 @@ def get_last_checkpoint(ouput_dir):
     return None # No checkpoint found
 
 config = RobertaConfig.from_pretrained(MODEL_ROBERTA_CRF)
-config.num_labels = num_labels=len(ID2LABEL)
+config.num_labels = num_labels=NUM_LABELS
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_ROBERTA_CRF)
 if checkpoint:
     model = RobertaCRF.from_pretrained(checkpoint,config=config)
@@ -85,9 +85,10 @@ training_args = TrainingArguments(
     num_train_epochs=NUM_TRAIN_EPOCHS_ROBERTA_CRF,
     weight_decay=WEIGHT_DECAY_ROBERTA_CRF,
     learning_rate=LR_ROBERTA_CRF,
+    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_ROBERTA_CRF,
     output_dir=EXPERIMENT_RESULTS_DIR_ROBERTA_CRF,
     logging_dir=EXPERIMENT_RESULTS_DIR_ROBERTA_CRF + "/logs",
-    logging_steps=LOGGING_STEPS,
+    logging_steps=LOGGING_STEPS_ROBERTA_CRF,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
