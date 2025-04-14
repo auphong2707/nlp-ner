@@ -24,10 +24,14 @@ class T5CRF(PreTrainedModel):
         mask = attention_mask.bool() if attention_mask is not None else None
 
         if labels is not None:
-            labels = labels.long()  # ⚠️ ép kiểu về long trước khi dùng CRF
-            # Training mode: compute CRF loss
+            # Chuyển -100 thành 0 tạm thời để tránh lỗi index, CRF sẽ dùng mask để bỏ qua
+            labels = labels.clone()
+            labels[labels == -100] = 0
+            labels = labels.long()
+
             loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
             return {"loss": loss, "logits": emissions}
+
         else:
             # Inference mode: decode best path
             predictions = self.crf.decode(emissions, mask=mask)
