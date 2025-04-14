@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.utils import compute_class_weight
 import torch
 import shutil
-from utils.constants import NUM_LABELS
+
 from transformers import AutoTokenizer
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
@@ -210,12 +210,8 @@ def tokenize_t5(example):
     word_ids = tokenized_inputs.word_ids()  # Map token to the original word
 
     for i, word_id in enumerate(word_ids):
-        if word_id is not None:
-            label_id = example["ner_tags"][word_id]
-            if 0 <= label_id < NUM_LABELS:
-                labels[i] = label_id
-            else:
-                labels[i] = -100  
+        if word_id is not None:  # Ignore special tokens
+            labels[i] = example["ner_tags"][word_id]
 
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
