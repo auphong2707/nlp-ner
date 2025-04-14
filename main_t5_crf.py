@@ -69,20 +69,20 @@ training_args = TrainingArguments(
     report_to="wandb",
     evaluation_strategy='steps',
     save_strategy='steps',
-    eval_steps=EVAL_STEPS_T5_CRF,
-    save_steps=SAVE_STEPS_T5_CRF,
+    eval_steps=5,
+    save_steps=10, 
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5_CRF,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_T5_CRF,
-    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CRF,
+    num_train_epochs=1,
     weight_decay=WEIGHT_DECAY_T5_CRF,
     learning_rate=LR_T5_CRF,
     output_dir=EXPERIMENT_RESULTS_DIR_T5_CRF,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CRF + "/logs",
-    logging_steps=LOGGING_STEPS_T5_CRF,
+    logging_steps=2,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
-    save_total_limit=2,
+    save_total_limit=1,  
     fp16=False,
     seed=SEED
 )
@@ -123,10 +123,4 @@ with open(EXPERIMENT_RESULTS_DIR_T5_CRF + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
 if platform.system() != "Windows":
-    api = huggingface_hub.HfApi()
-    api.upload_large_folder(
-        folder_path=EXPERIMENT_RESULTS_DIR_T5_CRF,
-        repo_id="auphong2707/nlp-t5-crf",
-        repo_type="model",
-        private=False
-    )
+    pass  # Skip upload for testing on Kaggle
