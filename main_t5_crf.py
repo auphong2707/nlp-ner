@@ -4,19 +4,19 @@ from utils.functions import set_seed, prepare_dataset_t5
 import torch
 import wandb, huggingface_hub, os, platform
 import evaluate
-from transformers import TrainingArguments, Trainer, T5Config, T5TokenizerFast
+from transformers import TrainingArguments, Trainer, T5Config
 
-from models.model_t5_crf import T5CRF  # Đảm bảo bạn lưu mô hình mới vào models/model_t5_crf.py
+from models.model_t5_crf import T5CRF
 
-"[SETUP]"
+"[SETUP SEED & LOGIN]"
 set_seed(SEED)
 
 if platform.system() != "Windows":
     wandb.login(key=os.getenv("WANDB_API_KEY"))
     huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
-# Load dataset and tokenizer (chắc chắn TOKENIZER_T5 là tên mô hình T5 ví dụ "t5-small")
-train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
+"[PREPARE DATASET]"
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CRF)
 
 "[METRICS]"
 metric = evaluate.load("seqeval")
@@ -25,9 +25,8 @@ def compute_metrics(eval_pred):
     preds, labels = eval_pred
     preds = preds.cpu().numpy() if isinstance(preds, torch.Tensor) else preds
     labels = labels.cpu().numpy() if isinstance(labels, torch.Tensor) else labels
-    
+
     decoded_labels, decoded_preds = [], []
-    
     for label_seq, pred_seq in zip(labels, preds):
         current_labels, current_preds = [], []
         for label, pred in zip(label_seq, pred_seq):
@@ -39,11 +38,12 @@ def compute_metrics(eval_pred):
 
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
-"[MODEL SETUP]"
+"[LOAD MODEL]"
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CRF, exist_ok=True)
 
 def get_last_checkpoint(output_dir):
-    if not os.path.exists(output_dir): return None
+    if not os.path.exists(output_dir):
+        return None
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
         last_checkpoint = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))[-1]
@@ -61,29 +61,29 @@ else:
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-#torch.compile(model)
+torch.compile(model)  # Optional performance boost
 
-"[TRAINING ARGS]"
+"[TRAINING ARGUMENTS]"
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_T5_CRF,
     report_to="wandb",
-    evaluation_strategy='steps',
-    save_strategy='steps',
-    eval_steps=5,
-    save_steps=10, 
+    evaluation_strategy="steps",
+    save_strategy="steps",
+    eval_steps=EVAL_STEPS_T5_CRF,
+    save_steps=SAVE_STEPS_T5_CRF,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5_CRF,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_T5_CRF,
-    num_train_epochs=1,
+    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CRF,
     weight_decay=WEIGHT_DECAY_T5_CRF,
     learning_rate=LR_T5_CRF,
     output_dir=EXPERIMENT_RESULTS_DIR_T5_CRF,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CRF + "/logs",
-    logging_steps=2,
+    logging_steps=LOGGING_STEPS_T5_CRF,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
     greater_is_better=True,
-    save_total_limit=1,  
-    fp16=False,
+    save_total_limit=2,
+    fp16=True,
     seed=SEED
 )
 
@@ -100,19 +100,16 @@ trainer = Trainer(
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
 )
 
-print("🚀 Starting training now...")
-
-
-"[TRAINING]"
+"[TRAIN]"
 if checkpoint:
     trainer.train(resume_from_checkpoint=checkpoint)
 else:
     trainer.train()
 
-"[EVALUATING]"
+"[EVALUATE]"
 test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
-"[SAVING]"
+"[SAVE MODEL]"
 model.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CRF)
 tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CRF)
 
@@ -122,5 +119,12 @@ with open(EXPERIMENT_RESULTS_DIR_T5_CRF + "/training_args.txt", "w") as f:
 with open(EXPERIMENT_RESULTS_DIR_T5_CRF + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
+"[UPLOAD TO HUGGINGFACE]"
 if platform.system() != "Windows":
-    pass  # Skip upload for testing on Kaggle
+    api = huggingface_hub.HfApi()
+    api.upload_large_folder(
+        folder_path=RESULTS_DIR_T5_CRF,
+        repo_id="auphong2707/nlp-ner",
+        repo_type="model",
+        private=False
+    )
