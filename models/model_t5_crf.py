@@ -15,7 +15,7 @@ class T5CRF(T5PreTrainedModel):
         self.init_weights()
 
     def forward(self, input_ids, attention_mask=None, labels=None):
-        # Only use encoder for token classification
+        # Encoder output only
         encoder_outputs = self.t5.encoder(input_ids=input_ids, attention_mask=attention_mask)
         sequence_output = encoder_outputs.last_hidden_state  # (batch_size, seq_len, hidden_size)
 
@@ -25,10 +25,14 @@ class T5CRF(T5PreTrainedModel):
         mask = attention_mask.bool() if attention_mask is not None else None
 
         if labels is not None:
-            # Training: compute CRF loss
+            # 🔧 FIX: Replace -100 with 0 (safe due to masking)
+            labels = labels.clone()
+            labels[labels == -100] = 0
+
+            # Compute CRF loss
             loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
             return {"loss": loss, "logits": emissions}
         else:
-            # Inference: decode tags
+            # Inference: decode
             predictions = self.crf.decode(emissions, mask=mask)
             return {"logits": emissions, "predictions": predictions}
