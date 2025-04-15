@@ -16,8 +16,13 @@ class T5CRF(T5PreTrainedModel):
 
         mask = attention_mask.bool() if attention_mask is not None else None
 
+        # Filter out -100 in labels to avoid index error in CRF
         if labels is not None:
-            # CRF expects emissions and labels of shape (batch_size, seq_len)
+            # Ensure all label values are within [0, num_labels-1]
+            # CRF automatically masks with `mask`, so we don't need -100
+            labels = labels.clone()
+            labels[labels == -100] = 0  # Replace -100 with a valid index, will be masked anyway
+
             loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
             return {"loss": loss, "logits": emissions}
         else:
