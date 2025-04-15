@@ -89,7 +89,7 @@ RESULTS_DIR_T5_CLS_CE = RESULTS_DIR + "t5-cls-ce/"
 EXPERIMENT_NAME_T5_CLS_CE = "t5-cls-ce-"
 EXPERIMENT_RESULTS_DIR_T5_CLS_CE = RESULTS_DIR_T5_CLS_CE + EXPERIMENT_NAME_T5_CLS_CE
 
-LR_T5_CLS_CE = 2e-5               
+LR_T5_CLS_CE = 1e-5               
 TRAIN_BATCH_SIZE_T5_CLS_CE = 8    
 EVAL_BATCH_SIZE_T5_CLS_CE = 8     
 NUM_TRAIN_EPOCHS_T5_CLS_CE = 3    
@@ -98,7 +98,7 @@ EVAL_STEPS_T5_CLS_CE = 500
 SAVE_STEPS_T5_CLS_CE = 500        
 GRADIENT_ACCUMULATION_STEPS_T5_CLS_CE = 1
 
-LOGGING_STEPS_T5_CLS_CE = 500
+LOGGING_STEPS_T5_CLS_CE = 50
 # --------------------------------------------------------------------------------------------
 
 
