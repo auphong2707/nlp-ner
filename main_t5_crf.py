@@ -17,7 +17,7 @@ if platform.system() != "Windows":
     huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Load dataset and tokenizer
-train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5)
+train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CRF)
 
 metric = evaluate.load("seqeval")
 
