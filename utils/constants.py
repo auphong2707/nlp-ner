@@ -98,7 +98,7 @@ EVAL_STEPS_T5_CLS_CE = 500
 SAVE_STEPS_T5_CLS_CE = 500        
 GRADIENT_ACCUMULATION_STEPS_T5_CLS_CE = 1
 
-LOGGING_STEPS_T5_CLS_CE = 500
+LOGGING_STEPS_T5_CLS_CE = 50
 # --------------------------------------------------------------------------------------------
 
 
