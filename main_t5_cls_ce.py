@@ -42,7 +42,7 @@ def compute_metrics(eval_pred):
     pred_list = [pred.strip().split() for pred in decoded_preds]
     label_list = [label.strip().split() for label in decoded_labels]
 
-    # Bỏ các cặp không khớp độ dài
+    # Loại các cặp không khớp độ dài
     filtered_preds, filtered_labels = [], []
     for p, l in zip(pred_list, label_list):
         if len(p) == len(l):
@@ -50,7 +50,7 @@ def compute_metrics(eval_pred):
             filtered_labels.append(l)
 
     if len(filtered_preds) == 0:
-        return {"overall_f1": 0.0}
+        return {"eval_overall_f1": 0.0}
 
     results = metric.compute(
         predictions=filtered_preds,
@@ -58,14 +58,19 @@ def compute_metrics(eval_pred):
         zero_division=0
     )
 
+    # Gán lại tên chuẩn cho Hugging Face Trainer
+    results["eval_overall_f1"] = results.get("overall_f1", 0.0)
+    results["eval_overall_precision"] = results.get("overall_precision", 0.0)
+    results["eval_overall_recall"] = results.get("overall_recall", 0.0)
+
     # Log metric tổng thể
     wandb.log({
-        "eval/overall_f1": results.get("overall_f1", 0.0),
-        "eval/overall_precision": results.get("overall_precision", 0.0),
-        "eval/overall_recall": results.get("overall_recall", 0.0),
+        "eval/overall_f1": results["eval_overall_f1"],
+        "eval/overall_precision": results["eval_overall_precision"],
+        "eval/overall_recall": results["eval_overall_recall"],
     })
 
-    # Gộp theo entity type (PER, LOC, ...)
+    # Gộp B-/I- thành class capslock
     class_metrics = defaultdict(lambda: {"f1": [], "precision": [], "recall": [], "support": []})
 
     for key, val in results.items():
@@ -73,27 +78,24 @@ def compute_metrics(eval_pred):
             parts = key.split("_")
             if len(parts) == 2:
                 label_type, metric_type = parts
-                if "-" in label_type:
-                    _, entity = label_type.split("-")  # B-PER → PER
-                    class_metrics[entity][metric_type].append(val)
-            elif parts[-1] == "support":  # hỗ trợ cả key như B-PER_support
-                label_type = parts[0]
-                if "-" in label_type:
-                    _, entity = label_type.split("-")
-                    class_metrics[entity]["support"].append(val)
+                if "-" in label_type and metric_type in {"f1", "precision", "recall", "support"}:
+                    prefix, entity = label_type.split("-")
+                    if prefix in {"B", "I"}:
+                        entity = entity.upper()  # ✅ viết hoa tên class
+                        class_metrics[entity][metric_type].append(val)
 
-    # Tính trung bình và log lên wandb
+    # Trung bình & log từng class (viết hoa, dùng .number thay support)
     for ent, m in class_metrics.items():
         f1 = np.mean(m["f1"]) if m["f1"] else 0.0
         precision = np.mean(m["precision"]) if m["precision"] else 0.0
         recall = np.mean(m["recall"]) if m["recall"] else 0.0
-        support = int(np.sum(m["support"])) if m["support"] else 0
+        number = int(np.sum(m["support"])) if m["support"] else 0  # ✅ Đổi tên support → number
 
         wandb.log({
-            f"eval/{ent}_f1": f1,
-            f"eval/{ent}_precision": precision,
-            f"eval/{ent}_recall": recall,
-            f"eval/{ent}_support": support
+            f"eval/{ent}.f1": f1,
+            f"eval/{ent}.precision": precision,
+            f"eval/{ent}.recall": recall,
+            f"eval/{ent}.number": number,
         })
 
     return results
