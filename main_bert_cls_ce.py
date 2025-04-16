@@ -18,25 +18,31 @@ train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    preds, labels = eval_pred
-    print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
+    predictions, labels = eval_pred
 
-    decoded_labels = []
-    decoded_preds = []
-    for label_seq, pred_seq in zip(labels, preds):
-        current_labels = []
-        current_preds = []
-        for label, pred in zip(label_seq, pred_seq):
-            # Filter out padding tokens (commonly set to -100)
-            if label != -100:
-                # Convert numerical IDs to string labels using your mapping
-                current_labels.append(ID2LABEL[label])
-                current_preds.append(ID2LABEL[pred])
-        decoded_labels.append(current_labels)
-        decoded_preds.append(current_preds)
-    
-    return metric.compute(predictions=decoded_preds, references=decoded_labels)
-    
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+
+    pred_list = [pred.strip().split() for pred in decoded_preds]
+    label_list = [label.strip().split() for label in decoded_labels]
+
+    filtered_preds, filtered_labels = [], []
+    for p, l in zip(pred_list, label_list):
+        if len(p) == len(l):
+            filtered_preds.append(p)
+            filtered_labels.append(l)
+
+    if len(filtered_preds) == 0:
+        return {"overall_precision": 0.0, "overall_recall": 0.0, "overall_f1": 0.0}
+
+    # Gọi metric seqeval
+    results = metric.compute(
+        predictions=filtered_preds,
+        references=filtered_labels,
+        zero_division=0
+    )
+
+    return results
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
 # Create experiment results directory
