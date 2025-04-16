@@ -2,6 +2,7 @@ from utils.constants import *
 from utils.functions import set_seed, prepare_dataset_t5
 
 import numpy as np
+from collections import defaultdict
 import wandb, huggingface_hub, os
 import evaluate
 from transformers import (
@@ -38,35 +39,38 @@ def compute_metrics(eval_pred):
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-    # Chuẩn hoá: tách từng chuỗi thành list các tag
     pred_list = [pred.strip().split() for pred in decoded_preds]
     label_list = [label.strip().split() for label in decoded_labels]
 
-    # ⚠️ Sửa lỗi: chỉ giữ lại những cặp cùng độ dài
-    filtered_preds = []
-    filtered_labels = []
-
+    filtered_preds, filtered_labels = [], []
     for p, l in zip(pred_list, label_list):
         if len(p) == len(l):
             filtered_preds.append(p)
             filtered_labels.append(l)
 
     if len(filtered_preds) == 0:
-        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+        return {"overall_f1": 0.0}
 
-    results = metric.compute(
-        predictions=filtered_preds,
-        references=filtered_labels,
-        zero_division=0
-    )
+    results = metric.compute(predictions=filtered_preds, references=filtered_labels, zero_division=0)
 
-    precision = results.get("overall_precision", 0.0)
-    recall = results.get("overall_recall", 0.0)
-    f1 = results.get("overall_f1", 0.0)
+    wandb.log({
+        "eval/overall_f1": results.get("overall_f1", 0.0),
+        "eval/overall_precision": results.get("overall_precision", 0.0),
+        "eval/overall_recall": results.get("overall_recall", 0.0),
+    })
 
-    wandb.log({"eval/precision": precision, "eval/recall": recall, "eval/f1": f1})
+    class_metrics = defaultdict(list)
+    for key, val in results.items():
+        if "_" in key and key.endswith("_f1"):
+            label_type = key.split("_")[0]      
+            _, ent_type = label_type.split("-")
+            class_metrics[ent_type].append(val)
 
-    return {"precision": precision, "recall": recall, "f1": f1}
+    for ent_type, f1s in class_metrics.items():
+        avg_f1 = np.mean(f1s)
+        wandb.log({f"eval/{ent_type}_f1": avg_f1})
+
+    return results  
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, exist_ok=True)
