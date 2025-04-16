@@ -6,7 +6,7 @@ from sklearn.utils import compute_class_weight
 import torch
 import shutil
 
-from constants import ID2LABEL, LABEL2ID
+from utils.constants import ID2LABEL, LABEL2ID
 from transformers import AutoTokenizer
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
