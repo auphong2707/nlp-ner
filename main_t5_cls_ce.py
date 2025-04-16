@@ -38,23 +38,35 @@ def compute_metrics(eval_pred):
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-    # Chuyển từ chuỗi → list các tags (VD: "B-PER O O B-LOC" → ["B-PER", "O", "O", "B-LOC"])
+    # Chuẩn hoá: tách từng chuỗi thành list các tag
     pred_list = [pred.strip().split() for pred in decoded_preds]
     label_list = [label.strip().split() for label in decoded_labels]
 
-    # Tính F1, Precision, Recall
-    results = metric.compute(predictions=pred_list, references=label_list, zero_division=0)
+    # ⚠️ Sửa lỗi: chỉ giữ lại những cặp cùng độ dài
+    filtered_preds = []
+    filtered_labels = []
+
+    for p, l in zip(pred_list, label_list):
+        if len(p) == len(l):
+            filtered_preds.append(p)
+            filtered_labels.append(l)
+
+    if len(filtered_preds) == 0:
+        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+
+    results = metric.compute(
+        predictions=filtered_preds,
+        references=filtered_labels,
+        zero_division=0
+    )
+
     precision = results.get("overall_precision", 0.0)
     recall = results.get("overall_recall", 0.0)
     f1 = results.get("overall_f1", 0.0)
 
     wandb.log({"eval/precision": precision, "eval/recall": recall, "eval/f1": f1})
 
-    return {
-        "precision": precision,
-        "recall": recall,
-        "f1": f1
-    }
+    return {"precision": precision, "recall": recall, "f1": f1}
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, exist_ok=True)
