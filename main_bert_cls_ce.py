@@ -41,7 +41,8 @@ def compute_metrics(eval_pred):
         references=filtered_labels,
         zero_division=0
     )
-
+    
+    results["eval_overall_f1"] = results.get("overall_f1", 0.0)
     return results
 
 # [SETTING UP MODEL AND TRAINING ARGUMENTS]
