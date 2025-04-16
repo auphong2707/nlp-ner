@@ -6,6 +6,7 @@ from sklearn.utils import compute_class_weight
 import torch
 import shutil
 
+from functions import ID2LABEL, LABEL2ID
 from transformers import AutoTokenizer
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
@@ -197,25 +198,31 @@ def tokenize_t5(example):
             - "attention_mask" (list of int): Attention mask indicating which tokens are padding.
             - "labels" (list of int): Aligned NER tags for each token, with -100 for special tokens and padding.
     """
-    tokenized_inputs = TOKENIZER(
-        example["tokens"],  # No need to concatenate strings, keep as a list of tokens
-        truncation=True,
-        padding="max_length",
+    # 1. Join tokens lại thành một câu đầu vào
+    tokens = example["tokens"]
+    input_str = " ".join(tokens)
+
+    # 2. Chuyển ner_tags thành chuỗi label tương ứng
+    label_str = " ".join([ID2LABEL[tag] for tag in example["ner_tags"]])
+
+    # 3. Tokenize input + target như seq2seq
+    model_inputs = TOKENIZER(
+        input_str,
         max_length=128,
-        is_split_into_words=True  # Ensure word-to-token alignment
+        truncation=True,
+        padding="max_length"
     )
 
-    # Assign labels to the tokenized sequence
-    labels = [-100] * len(tokenized_inputs["input_ids"])  # Default to -100 to ignore special tokens
-    word_ids = tokenized_inputs.word_ids()  # Map token to the original word
+    with TOKENIZER.as_target_tokenizer():
+        labels = TOKENIZER(
+            label_str,
+            max_length=128,
+            truncation=True,
+            padding="max_length"
+        )
 
-    for i, word_id in enumerate(word_ids):
-        if word_id is not None:  # Ignore special tokens
-            labels[i] = example["ner_tags"][word_id]
-
-    tokenized_inputs["labels"] = labels
-    return tokenized_inputs
-
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
 
 def prepare_dataset_t5(tokenizer_name):
     """
@@ -257,9 +264,9 @@ def prepare_dataset_t5(tokenizer_name):
     test_dataset = Dataset.from_list(test_data)
 
     # Tokenize the data
-    train_dataset = train_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count() - 1)
-    val_dataset = val_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count() - 1)
-    test_dataset = test_dataset.map(tokenize_t5, batched=False, remove_columns=["tokens", "ner_tags"], num_proc=os.cpu_count() - 1)
+    train_dataset = train_dataset.map(tokenize_t5, batched=False, num_proc=os.cpu_count() - 1)
+    val_dataset = val_dataset.map(tokenize_t5, batched=False, num_proc=os.cpu_count() - 1)
+    test_dataset = test_dataset.map(tokenize_t5, batched=False, num_proc=os.cpu_count() - 1)
 
     return train_dataset, val_dataset, test_dataset, TOKENIZER
 

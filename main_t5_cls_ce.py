@@ -1,61 +1,65 @@
 from utils.constants import *
 from utils.functions import set_seed, prepare_dataset_t5
-set_seed(SEED)
 
 import numpy as np
 import wandb, huggingface_hub, os
 import evaluate
-from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AutoTokenizer
-from transformers import DataCollatorForTokenClassification
+from transformers import (
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+    T5ForConditionalGeneration,
+    AutoTokenizer,
+    DataCollatorForSeq2Seq,
+)
+
+set_seed(SEED)
 
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
-# Prepare dataset and tokenizer for T5
+# Prepare dataset and tokenizer for T5 (now returning text-labels for seq2seq)
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CLS_CE)
-data_collator = DataCollatorForTokenClassification(tokenizer)
 
-# Define metric
+# Data collator cho T5 seq2seq
+data_collator = DataCollatorForSeq2Seq(
+    tokenizer=tokenizer,
+    model=None,  # sẽ tự động cập nhật khi trainer khởi tạo
+    padding="max_length",
+    return_tensors="pt"
+)
+
+# Metric setup
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    logits = np.nan_to_num(logits)
-    predictions = np.argmax(logits, axis=-1)
+    predictions, labels = eval_pred
 
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-    # Ignore special tokens (-100)
-    true_predictions = [
-        [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
-        for prediction, label in zip(predictions, labels)
-    ]
-    true_labels = [
-        [ID2LABEL[l] for l in label if l != -100]
-        for label in labels
-    ]
+    # Chuyển từ chuỗi → list các tags (VD: "B-PER O O B-LOC" → ["B-PER", "O", "O", "B-LOC"])
+    pred_list = [pred.strip().split() for pred in decoded_preds]
+    label_list = [label.strip().split() for label in decoded_labels]
 
-    # Debugging: Check the actual results for true predictions and labels
-    # print(f"True Predictions: {true_predictions[:5]}")
-    # print(f"True Labels: {true_labels[:5]}")
-
-    # Set zero_division to handle cases where recall and f1 are undefined
-    results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
-
-    # Log metrics (set default to 0 if not found in results)
-    precision = results.get("precision", 0.0)
-    recall = results.get("recall", 0.0)
-    f1 = results.get("f1", 0.0)
+    # Tính F1, Precision, Recall
+    results = metric.compute(predictions=pred_list, references=label_list, zero_division=0)
+    precision = results.get("overall_precision", 0.0)
+    recall = results.get("overall_recall", 0.0)
+    f1 = results.get("overall_f1", 0.0)
 
     wandb.log({"eval/precision": precision, "eval/recall": recall, "eval/f1": f1})
 
-    return results
+    return {
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, exist_ok=True)
 
-# Load T5 model
-checkpoint = None
+# Load or resume model
 def get_last_checkpoint(output_dir):
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
@@ -66,15 +70,15 @@ def get_last_checkpoint(output_dir):
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5_CLS_CE)
 
 if checkpoint:
-    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=NUM_LABELS)
+    model = T5ForConditionalGeneration.from_pretrained(checkpoint)
 else:
-    model = T5ForTokenClassification.from_pretrained(MODEL_T5_CLS_CE, num_labels=NUM_LABELS)
+    model = T5ForConditionalGeneration.from_pretrained(MODEL_T5_CLS_CE)
     model.gradient_checkpointing_enable()
 
 model.to("cuda")
 
-# Create Training Arguments
-training_args = TrainingArguments(
+# Training arguments
+training_args = Seq2SeqTrainingArguments(
     run_name=EXPERIMENT_NAME_T5_CLS_CE,
     report_to="wandb",
     evaluation_strategy="steps",
@@ -88,25 +92,26 @@ training_args = TrainingArguments(
     learning_rate=LR_T5_CLS_CE,
     gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_T5_CLS_CE,
     output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_CE,
-    logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/logs",
+    logging_dir=os.path.join(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, "logs"),
     logging_steps=LOGGING_STEPS_T5_CLS_CE,
     load_best_model_at_end=True,
-    metric_for_best_model="eval_overall_f1",
-    save_total_limit=2,
+    metric_for_best_model="f1",
     greater_is_better=True,
+    save_total_limit=2,
+    predict_with_generate=True,  
     fp16=True,
     seed=SEED,
 )
 
-# Trainer 
-trainer = Trainer(
+# Trainer
+trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
-    compute_metrics=compute_metrics,
     data_collator=data_collator,
+    compute_metrics=compute_metrics,
 )
 
 # Train
@@ -130,7 +135,7 @@ with open(EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/training_args.txt", "w") as f:
 with open(EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
-# Upload to Hugging Face
+# Upload to Hugging Face Hub
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
     folder_path=RESULTS_DIR_T5_CLS_CE,
