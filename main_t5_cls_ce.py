@@ -17,10 +17,10 @@ MAX_LENGTH = 512  # You can adjust this based on your input data
 # Prepare the dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_T5_CLS_CE)
 
-# Ensure padding and truncation during tokenization (using max_length)
-train_dataset = train_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
-val_dataset = val_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
-test_dataset = test_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
+# # Ensure padding and truncation during tokenization (using max_length)
+# train_dataset = train_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
+# val_dataset = val_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
+# test_dataset = test_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
 
 # Define compute_metrics function
 metric = evaluate.load("seqeval")
