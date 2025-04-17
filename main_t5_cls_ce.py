@@ -46,7 +46,7 @@
             if k not in {"f1", "precision", "recall"}
         }
 
-    return filtered_results
+        return filtered_results
 
 
     # Create results directory
