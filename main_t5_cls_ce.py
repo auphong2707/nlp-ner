@@ -24,6 +24,16 @@ def compute_metrics(eval_pred):
     logits = np.nan_to_num(logits)
     predictions = np.argmax(logits, axis=-1)
 
+    # Kiểm tra nếu toàn bộ labels là -100 (không có nhãn hợp lệ)
+    if all(all(l == -100 for l in label) for label in labels):
+        print("⚠️ Toàn bộ labels là -100 trong batch hiện tại — bỏ qua batch này.")
+        return {
+            "overall_f1": 0.0,
+            "overall_precision": 0.0,
+            "overall_recall": 0.0,
+        }
+
+    # Chuyển prediction và labels sang dạng tên tag
     true_predictions = [
         [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
@@ -33,13 +43,22 @@ def compute_metrics(eval_pred):
         for label in labels
     ]
 
+    # Tính toán metric bằng thư viện seqeval
     results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
 
+    # Nếu F1 tụt về 0, in ra để kiểm tra
+    if results.get("overall_f1", 0.0) < 0.01:
+        print("⚠️ F1-score gần 0. Kiểm tra một vài prediction:")
+        print("Pred:", true_predictions[:1])
+        print("Label:", true_labels[:1])
+
+    # Trả về tất cả metric, nhưng loại bỏ 3 key không mong muốn
     filtered_results = {
         k: v for k, v in results.items()
         if k not in {"f1", "precision", "recall"}
     }
 
+    # Giữ lại các metric tổng thể để dùng trong eval
     filtered_results["overall_f1"] = results.get("overall_f1", 0.0)
     filtered_results["overall_precision"] = results.get("overall_precision", 0.0)
     filtered_results["overall_recall"] = results.get("overall_recall", 0.0)
