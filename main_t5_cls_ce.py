@@ -24,7 +24,6 @@ def compute_metrics(eval_pred):
     logits = np.nan_to_num(logits)
     predictions = np.argmax(logits, axis=-1)
 
-    # Bỏ token đặc biệt (-100)
     true_predictions = [
         [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
@@ -34,25 +33,19 @@ def compute_metrics(eval_pred):
         for label in labels
     ]
 
-    # Tính toán tất cả các chỉ số NER
-    results = metric.compute(
-        predictions=true_predictions,
-        references=true_labels,
-        zero_division=0
-    )
+    results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
 
-    # Trả về toàn bộ metric, nhưng loại bỏ 3 key không mong muốn
     filtered_results = {
-        f"eval/{k}": v for k, v in results.items()
+        k: v for k, v in results.items()
         if k not in {"f1", "precision", "recall"}
     }
 
-    # Bổ sung lại 3 metric tổng thể bạn cần giữ
-    filtered_results["eval/overall_f1"] = results.get("overall_f1", 0.0)
-    filtered_results["eval/overall_precision"] = results.get("overall_precision", 0.0)
-    filtered_results["eval/overall_recall"] = results.get("overall_recall", 0.0)
+    filtered_results["overall_f1"] = results.get("overall_f1", 0.0)
+    filtered_results["overall_precision"] = results.get("overall_precision", 0.0)
+    filtered_results["overall_recall"] = results.get("overall_recall", 0.0)
 
     return filtered_results
+
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, exist_ok=True)
@@ -94,7 +87,7 @@ training_args = TrainingArguments(
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/logs",
     logging_steps=LOGGING_STEPS_T5_CLS_CE,
     load_best_model_at_end=True,
-    metric_for_best_model="eval_overall_f1",
+    metric_for_best_model="eval/overall_f1",
     save_total_limit=2,
     greater_is_better=True,
     fp16=True,
