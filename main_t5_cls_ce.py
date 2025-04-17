@@ -24,8 +24,7 @@ def compute_metrics(eval_pred):
     logits = np.nan_to_num(logits)
     predictions = np.argmax(logits, axis=-1)
 
-
-    # Ignore special tokens (-100)
+    # Bỏ token đặc biệt (-100)
     true_predictions = [
         [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
         for prediction, label in zip(predictions, labels)
@@ -35,21 +34,25 @@ def compute_metrics(eval_pred):
         for label in labels
     ]
 
-    # Debugging: Check the actual results for true predictions and labels
-    # print(f"True Predictions: {true_predictions[:5]}")
-    # print(f"True Labels: {true_labels[:5]}")
+    # Tính toán tất cả các chỉ số NER
+    results = metric.compute(
+        predictions=true_predictions,
+        references=true_labels,
+        zero_division=0
+    )
 
-    # Set zero_division to handle cases where recall and f1 are undefined
-    results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
+    # Trả về toàn bộ metric, nhưng loại bỏ 3 key không mong muốn
+    filtered_results = {
+        f"eval/{k}": v for k, v in results.items()
+        if k not in {"f1", "precision", "recall"}
+    }
 
-    # Log metrics (set default to 0 if not found in results)
-    precision = results.get("precision", 0.0)
-    recall = results.get("recall", 0.0)
-    f1 = results.get("f1", 0.0)
+    # Bổ sung lại 3 metric tổng thể bạn cần giữ
+    filtered_results["eval/overall_f1"] = results.get("overall_f1", 0.0)
+    filtered_results["eval/overall_precision"] = results.get("overall_precision", 0.0)
+    filtered_results["eval/overall_recall"] = results.get("overall_recall", 0.0)
 
-    wandb.log({"eval/precision": precision, "eval/recall": recall, "eval/f1": f1})
-
-    return results
+    return filtered_results
 
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, exist_ok=True)
