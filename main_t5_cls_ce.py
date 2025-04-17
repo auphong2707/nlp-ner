@@ -4,15 +4,23 @@ set_seed(SEED)
 
 import wandb, huggingface_hub, os
 import evaluate
-from transformers import TrainingArguments, Trainer, T5ForTokenClassification
+from transformers import TrainingArguments, Trainer, T5ForTokenClassification, DataCollatorForSeq2Seq
 
 # [PREPARING DATASET AND FUNCTIONS]
 # Login to wandb & Hugging Face
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
+# Set the max_length for padding/truncation
+MAX_LENGTH = 512  # You can adjust this based on your input data
+
 # Prepare the dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_T5_CLS_CE)
+
+# Ensure padding and truncation during tokenization (using max_length)
+train_dataset = train_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
+val_dataset = val_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
+test_dataset = test_dataset.map(lambda x: tokenizer(x['tokens'], truncation=True, padding='max_length', max_length=MAX_LENGTH, is_split_into_words=True), batched=True)
 
 # Define compute_metrics function
 metric = evaluate.load("seqeval")
@@ -79,11 +87,15 @@ training_args = TrainingArguments(
     save_total_limit=2,
     fp16=True,
     gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_T5_CLS_CE,
+    max_length=MAX_LENGTH,  # Ensure truncation at max_length
     seed=SEED
 )
 
 def preprocess_logits_for_metrics(logits, labels):
     return logits.argmax(dim=-1)
+
+# Create a data collator for padding during training
+data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
 # Create Trainer
 trainer = Trainer(
@@ -92,6 +104,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
+    data_collator=data_collator,  # Add data collator for dynamic padding
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
