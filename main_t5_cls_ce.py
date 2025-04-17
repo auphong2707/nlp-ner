@@ -46,7 +46,6 @@ def compute_metrics(eval_pred):
 
     return filtered_results
 
-
 # Create results directory
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_CE, exist_ok=True)
 
@@ -87,7 +86,7 @@ training_args = TrainingArguments(
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/logs",
     logging_steps=LOGGING_STEPS_T5_CLS_CE,
     load_best_model_at_end=True,
-    metric_for_best_model="eval/overall_f1",
+    metric_for_best_model="eval_overall_f1",
     save_total_limit=2,
     greater_is_better=True,
     fp16=True,
