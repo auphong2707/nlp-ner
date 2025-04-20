@@ -1,34 +1,35 @@
-from transformers import BertTokenizer, AutoModelForTokenClassification
+from transformers import AutoTokenizer
 from utils import constants
+from models.model_t5_crf import T5CRF
+import torch
 
 # Load tokenizer and model
-tokenizer = BertTokenizer.from_pretrained("test/", local_files_only=True)
-model = AutoModelForTokenClassification.from_pretrained("test/")
+tokenizer = AutoTokenizer.from_pretrained("test/", local_files_only=True)
+model = T5CRF.from_pretrained("test/")
+model.eval()
 
-sentence = "Manchester United will face Liverpool in the Premier League on Sunday."
-inputs = tokenizer(sentence, return_tensors="pt")
-outputs = model(**inputs)
-predictions = outputs.logits.argmax(dim=-1)  # Choose the highest logit as the prediction
-predicted_labels = [constants.ID2LABEL.get(pred.item(), "UNKNOWN") for pred in predictions[0]]
+sentence = "Duc Minh Vu is very handsome."
+inputs = tokenizer(sentence, return_tensors="pt", padding=True, truncation=True, max_length=128)
 
-# print("Number of tokens:", len(inputs["input_ids"][0]))
-# print("Number of prediction tokens:", len(predictions[0]))
-# print(predictions)
+# Forward pass
+with torch.no_grad():
+    output = model(**inputs)
+    predictions = output["predictions"][0]  # batch_size = 1
+
+# Convert token IDs back to tokens
 tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+predicted_labels = [constants.ID2LABEL.get(p, "O") for p in predictions]
+
 print("Tokens:", tokens)
 print("Predicted Labels:", predicted_labels)
 
+# Clean up subwords and special tokens
 final_labels = []
-
 for i, token in enumerate(tokens):
-    # Skip special tokens like [CLS] and [SEP]
-    if token in ['[CLS]', '[SEP]']:
+    if token in tokenizer.all_special_tokens:
         continue
-    
-    # Handle subwords (tokens with '##' are part of the same word)
-    if '##' not in token:
-        # For the first token of a word, add the corresponding label
-        final_labels.append(predicted_labels[i])
+    if not token.startswith("▁") and final_labels:  # For sentencepiece tokenizer (like T5)
+        continue
+    final_labels.append(predicted_labels[i])
 
-# Output the final labels corresponding to each word
 print("Final Labels:", final_labels)
