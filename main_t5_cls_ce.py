@@ -4,7 +4,7 @@ set_seed(SEED)
 
 import wandb, huggingface_hub, os
 import evaluate
-from transformers import TrainingArguments, Trainer, T5ForTokenClassification
+from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AdamW, get_scheduler
 
 # [PREPARING DATASET AND FUNCTIONS]
 # Login to wandb & Hugging Face
@@ -71,7 +71,6 @@ training_args = TrainingArguments(
     weight_decay=WEIGHT_DECAY_T5_CLS_CE,
     learning_rate=LR_T5_CLS_CE, 
     lr_scheduler_type="linear",  # Linear decay
-    min_lr=1e-6,  # Set a minimum learning rate (prevents decay to 0)
     output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_CE,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/logs",
     logging_steps=LOGGING_STEPS_T5_CLS_CE,
@@ -87,6 +86,21 @@ training_args = TrainingArguments(
 def preprocess_logits_for_metrics(logits, labels):
     return logits.argmax(dim=-1)
 
+# Define optimizer and scheduler (for linear decay with min_lr)
+optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_CE)  # Optimizer for model parameters
+
+# Calculate total training steps
+total_steps = len(train_dataset) * training_args.num_train_epochs
+
+# Define the learning rate scheduler with min_lr
+scheduler = get_scheduler(
+    "linear",  # Use linear scheduler
+    optimizer=optimizer,  # The optimizer
+    num_warmup_steps=0,  # No warmup steps, you can adjust this if needed
+    num_training_steps=total_steps,  # Total training steps
+    min_lr=1e-6  # Set minimum learning rate
+)
+
 # Create Trainer
 trainer = Trainer(
     model=model,
@@ -96,6 +110,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
+    optimizers=(optimizer, scheduler)  # Add optimizer and scheduler to the Trainer
 )
 
 # [TRAINING]
