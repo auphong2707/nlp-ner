@@ -8,7 +8,6 @@ class BertCRF(BertPreTrainedModel):
         # Use the BertForTokenClassification model as the base
         self.bert = BertForTokenClassification(config)
         self.crf = CRF(num_tags=config.num_labels, batch_first=True)
-
         self.init_weights()
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None):
