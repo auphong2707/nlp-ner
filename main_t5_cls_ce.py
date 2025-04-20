@@ -98,7 +98,6 @@ scheduler = get_scheduler(
     optimizer=optimizer,  # The optimizer
     num_warmup_steps=0,  # No warmup steps, you can adjust this if needed
     num_training_steps=total_steps,  # Total training steps
-    min_lr=1e-6  # Set minimum learning rate
 )
 
 # Create Trainer
