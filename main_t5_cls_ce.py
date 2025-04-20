@@ -4,7 +4,8 @@ set_seed(SEED)
 
 import wandb, huggingface_hub, os
 import evaluate
-from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AdamW, get_scheduler
+from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AdamW
+import torch
 
 # [PREPARING DATASET AND FUNCTIONS]
 # Login to wandb & Hugging Face
@@ -86,19 +87,30 @@ training_args = TrainingArguments(
 def preprocess_logits_for_metrics(logits, labels):
     return logits.argmax(dim=-1)
 
-# Define optimizer and scheduler (for linear decay with min_lr)
-optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_CE)  # Optimizer for model parameters
+# Create optimizer
+optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_CE)
 
 # Calculate total training steps
-total_steps = len(train_dataset) * training_args.num_train_epochs
+total_steps = len(train_dataset) * training_args.num_train_epochs  # Ensure this is accurate
 
-# Define the learning rate scheduler with min_lr
-scheduler = get_scheduler(
-    "linear",  # Use linear scheduler
-    optimizer=optimizer,  # The optimizer
-    num_warmup_steps=0,  # No warmup steps, you can adjust this if needed
-    num_training_steps=total_steps,  # Total training steps
-    min_lr=1e-6  # Set minimum learning rate
+# Custom linear scheduler with min_lr to prevent decay to 0
+class LinearDecayWithMinLR(torch.optim.lr_scheduler._LRScheduler):
+    def __init__(self, optimizer, min_lr, max_steps, last_epoch=-1):
+        self.min_lr = min_lr
+        self.max_steps = max_steps
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        step = self.last_epoch
+        # Linear decay formula with min_lr
+        lr_decay = max(0, (1 - step / self.max_steps)) * (self.base_lrs[0] - self.min_lr) + self.min_lr
+        return [lr_decay] * len(self.base_lrs)
+
+# Create the custom learning rate scheduler
+scheduler = LinearDecayWithMinLR(
+    optimizer,
+    min_lr=1e-6,  # Set the minimum learning rate to avoid decay to 0
+    max_steps=total_steps
 )
 
 # Create Trainer
@@ -110,7 +122,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
-    optimizers=(optimizer, scheduler)  # Add optimizer and scheduler to the Trainer
+    optimizers=(optimizer, scheduler)  # Pass optimizer and scheduler to the Trainer
 )
 
 # [TRAINING]
