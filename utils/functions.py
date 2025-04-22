@@ -136,8 +136,8 @@ def tokenize_and_align_labels(example):
         previous_word_idx = word_idx
     # print(TOKENIZER.name_or_path *10, TOKENIZER.name_or_path == TOKENIZER_BERT_CRF)
 
-    # if len(labels)>0 and TOKENIZER.name_or_path == TOKENIZER_BERT_CRF:
-    #     labels[0]=0 #assign 0 or a valid label to [CLS]
+    if len(labels)>0 and TOKENIZER.name_or_path == TOKENIZER_BERT_CRF:
+        labels[0]=0 #assign 0 or a valid label to [CLS]
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
