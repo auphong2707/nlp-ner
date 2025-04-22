@@ -90,6 +90,7 @@ trainer = FocalLossTrainer(
     compute_metrics=compute_metrics,
     alpha=NER_CLASS_WEIGHTS,
     gamma=GAMMA,
+    loss_scale=LOSS_SCALE,
 )
 
 # Training
