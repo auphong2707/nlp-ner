@@ -19,9 +19,11 @@ class BertCRF(BertPreTrainedModel):
         if labels is not None:
             # Calculate the negative log likelihood loss
             crf_mask = (labels != -100).bool()
-            loss = -self.crf(emissions, labels, mask=crf_mask, reduction='token_mean')
             # loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
             # loss = -self.crf(emissions, labels, mask=mask, reduction='mean')
+            tags = labels.clone()
+            tags[labels == -100] = 0 
+            loss = -self.crf(emissions, tags, mask=crf_mask, reduction='token_mean')
             return {"loss": loss, "logits": emissions}
         else:
             # Get the predicted tags
