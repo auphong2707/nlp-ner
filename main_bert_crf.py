@@ -18,6 +18,7 @@ if platform.system() != "Windows":
     huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Load dataset and tokenizer
+set_label_cls = 1
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset(TOKENIZER_BERT_CRF)
 
 # Define compute_metrics function

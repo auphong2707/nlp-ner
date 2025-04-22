@@ -11,6 +11,8 @@ from datasets import Dataset
 from huggingface_hub import hf_hub_download
 from typing import Tuple
 
+from utils.constants import TOKENIZER_BERT_CRF
+
 def set_seed(seed: int = 42):
     """
     Sets the random seed for various libraries to ensure reproducibility.
@@ -132,6 +134,8 @@ def tokenize_and_align_labels(example):
         else:
             labels.append(-100)
         previous_word_idx = word_idx
+    if len(labels)>0 and TOKENIZER.name_or_path == TOKENIZER_BERT_CRF:
+        labels[0]=0 #assign 0 or a valid label to [CLS]
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
