@@ -6,7 +6,7 @@ from sklearn.utils import compute_class_weight
 import torch
 import shutil
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, T5TokenizerFast
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
 from typing import Tuple
@@ -241,7 +241,7 @@ def prepare_dataset_t5(tokenizer_name):
           available CPU cores.
     """
     global TOKENIZER
-    TOKENIZER = AutoTokenizer.from_pretrained(tokenizer_name)
+    TOKENIZER = T5TokenizerFast.from_pretrained(tokenizer_name)
 
     # Download dataset if not already present
     download_dataset()
