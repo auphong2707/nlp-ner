@@ -111,6 +111,7 @@ trainer = FocalLossTrainer(
     data_collator=data_collator,
     alpha=NER_CLASS_WEIGHTS,
     gamma=GAMMA,
+    loss_scale=LOSS_SCALE,
 )
 
 # Train
