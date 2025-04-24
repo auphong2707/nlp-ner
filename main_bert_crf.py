@@ -90,6 +90,7 @@ training_args = TrainingArguments(
     num_train_epochs=NUM_TRAIN_EPOCHS_BERT_CRF,
     weight_decay=WEIGHT_DECAY_BERT_CRF,
     learning_rate=LR_BERT_CRF,
+    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_BERT_CRF
     output_dir=EXPERIMENT_RESULTS_DIR_BERT_CRF,
     logging_dir=EXPERIMENT_RESULTS_DIR_BERT_CRF + "/logs",
     logging_steps=LOGGING_STEPS_BERT_CRF,
