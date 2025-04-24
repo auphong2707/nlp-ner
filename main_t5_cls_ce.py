@@ -151,7 +151,7 @@ with open(EXPERIMENT_RESULTS_DIR_T5_CLS_CE + "/test_results.txt", "w") as f:
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
     folder_path=EXPERIMENT_RESULTS_DIR_T5_CLS_CE,
-    repo_id="auphong2707/nlp-ner-t5",
+    repo_id="auphong2707/nlp-ner",
     repo_type="model",
     private=False
 )
