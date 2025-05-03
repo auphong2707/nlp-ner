@@ -36,7 +36,7 @@ def compute_metrics(eval_pred):
         p_seq, l_seq = [], []
         for p, l in zip(pred_seq, label_seq):
             if l != -100:
-                p_seq.append(ID2LABEL[p])
+                p_seq.append(ID2LABEL.get(p, "O"))  # fallback to "O" for unknown predictions
                 l_seq.append(ID2LABEL[l])
         decoded_preds.append(p_seq)
         decoded_labels.append(l_seq)
