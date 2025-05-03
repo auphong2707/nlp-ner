@@ -2,46 +2,53 @@ from utils.constants import *
 from utils.functions import set_seed, prepare_dataset_t5
 from utils.focal_loss_trainer import FocalLossTrainer
 
-import os, wandb, huggingface_hub, torch
-import numpy as np
-import evaluate
-from transformers import TrainingArguments, T5ForTokenClassification, AdamW
-from transformers import DataCollatorForTokenClassification
-
-# [SEED]
 set_seed(SEED)
 
-# [WANDB + HF LOGIN]
+import numpy as np
+import wandb, huggingface_hub, os
+import evaluate
+from transformers import (
+    TrainingArguments, T5ForTokenClassification,
+    AutoTokenizer, DataCollatorForTokenClassification
+)
+
+# Login
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
-# [DATA]
+# Prepare dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CLS_FOCAL)
 data_collator = DataCollatorForTokenClassification(tokenizer)
+
+# Metrics
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    preds, labels = eval_pred
-    preds = np.argmax(preds, axis=-1)
-    decoded_preds, decoded_labels = [], []
+    logits, labels = eval_pred
+    logits = np.nan_to_num(logits)
+    predictions = np.argmax(logits, axis=-1)
 
-    for p_seq, l_seq in zip(preds, labels):
-        cur_preds, cur_labels = [], []
-        for p, l in zip(p_seq, l_seq):
-            if l != -100:
-                cur_preds.append(ID2LABEL[p])
-                cur_labels.append(ID2LABEL[l])
-        decoded_preds.append(cur_preds)
-        decoded_labels.append(cur_labels)
+    true_predictions = [
+        [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+    true_labels = [
+        [ID2LABEL[l] for l in label if l != -100]
+        for label in labels
+    ]
 
-    return metric.compute(predictions=decoded_preds, references=decoded_labels)
+    results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
+    wandb.log({
+        "eval/precision": results.get("precision", 0.0),
+        "eval/recall": results.get("recall", 0.0),
+        "eval/f1": results.get("f1", 0.0),
+    })
+    return results
 
-def preprocess_logits_for_metrics(logits, labels):
-    return logits.argmax(dim=-1)
-
-# [CHECKPOINT]
+# Make result dir
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL, exist_ok=True)
 
+# Check for resume
 def get_last_checkpoint(output_dir):
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
@@ -50,93 +57,77 @@ def get_last_checkpoint(output_dir):
     return None
 
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL)
+
+# Load model
 if checkpoint:
-    model = T5ForTokenClassification.from_pretrained(checkpoint)
+    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=NUM_LABELS)
 else:
-    model = T5ForTokenClassification.from_pretrained(
-        MODEL_T5_CLS_FOCAL,
-        num_labels=NUM_LABELS,
-        ignore_mismatched_sizes=True
-    )
+    model = T5ForTokenClassification.from_pretrained(MODEL_T5_CLS_FOCAL, num_labels=NUM_LABELS)
+    model.gradient_checkpointing_enable()
 
-# [OPTIMIZER + SCHEDULER]
-optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_FOCAL)
-total_steps = len(train_dataset) * NUM_TRAIN_EPOCHS_T5_CLS_FOCAL
+model.to("cuda")
 
-class LinearDecayWithMinLR(torch.optim.lr_scheduler._LRScheduler):
-    def __init__(self, optimizer, min_lr, max_steps, last_epoch=-1):
-        self.min_lr = min_lr
-        self.max_steps = max_steps
-        super().__init__(optimizer, last_epoch)
-
-    def get_lr(self):
-        step = self.last_epoch
-        lr_decay = max(0, (1 - step / self.max_steps)) * (self.base_lrs[0] - self.min_lr) + self.min_lr
-        return [lr_decay] * len(self.base_lrs)
-
-scheduler = LinearDecayWithMinLR(optimizer, min_lr=1e-6, max_steps=total_steps)
-
-# [TRAINING ARGS]
+# Training args
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_T5_CLS_FOCAL,
     report_to="wandb",
-    output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL,
-    logging_dir=os.path.join(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL, "logs"),
     evaluation_strategy="steps",
     save_strategy="steps",
     eval_steps=EVAL_STEPS_T5_CLS_FOCAL,
     save_steps=SAVE_STEPS_T5_CLS_FOCAL,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5_CLS_FOCAL,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_T5_CLS_FOCAL,
-    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CLS_FOCAL,
+    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CLS_FOCAL, 
     weight_decay=WEIGHT_DECAY_T5_CLS_FOCAL,
-    learning_rate=LR_T5_CLS_FOCAL,
+    learning_rate=LR_T5_CLS_FOCAL, 
+    output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL,
+    logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/logs",
     gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_T5_CLS_FOCAL,
-    lr_scheduler_type="linear",
-    metric_for_best_model="eval_overall_f1",
+    logging_steps=LOGGING_STEPS_T5_CLS_FOCAL,
     load_best_model_at_end=True,
-    greater_is_better=True,
+    metric_for_best_model="eval_overall_f1",
     save_total_limit=2,
+    greater_is_better=True,
     fp16=True,
-    seed=SEED
+    seed=SEED,
 )
 
-# [TRAINER]
+# Trainer
 trainer = FocalLossTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
+    data_collator=data_collator,
     compute_metrics=compute_metrics,
-    optimizers=(optimizer, scheduler),
-    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
-    alpha=torch.tensor(ALPHA_T5_CLS_FOCAL) if ALPHA_T5_CLS_FOCAL else None,
-    gamma=GAMMA_T5_CLS_FOCAL,
-    loss_scale=LOSS_SCALE_T5_CLS_FOCAL,
+    alpha=NER_CLASS_WEIGHTS,
+    gamma=GAMMA,
+    loss_scale=LOSS_SCALE,
 )
 
-
-# [TRAIN]
+# Train
 if checkpoint:
     trainer.train(resume_from_checkpoint=checkpoint)
 else:
     trainer.train()
 
-# [EVAL]
+# Evaluate
 test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
-# [SAVE]
+# Save model/tokenizer
 model.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL)
 tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL)
 
-with open(os.path.join(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL, "training_args.txt"), "w") as f:
+# Save args
+with open(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
-with open(os.path.join(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL, "test_results.txt"), "w") as f:
+# Save test results
+with open(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
-# [UPLOAD]
+# Upload to Hugging Face
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
     folder_path=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL,
