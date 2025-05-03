@@ -24,8 +24,15 @@ metric = evaluate.load("seqeval")
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
     preds = np.argmax(preds, axis=-1)
+
     decoded_preds, decoded_labels = [], []
     for pred_seq, label_seq in zip(preds, labels):
+        # Ensure both are iterable (handle scalar case)
+        if not hasattr(pred_seq, '__iter__'):
+            pred_seq = [pred_seq]
+        if not hasattr(label_seq, '__iter__'):
+            label_seq = [label_seq]
+
         p_seq, l_seq = [], []
         for p, l in zip(pred_seq, label_seq):
             if l != -100:
@@ -33,7 +40,9 @@ def compute_metrics(eval_pred):
                 l_seq.append(ID2LABEL[l])
         decoded_preds.append(p_seq)
         decoded_labels.append(l_seq)
+
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
+
 
 def preprocess_logits_for_metrics(logits, labels):
     return logits.argmax(dim=-1)
