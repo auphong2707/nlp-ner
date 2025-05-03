@@ -2,62 +2,43 @@ from utils.constants import *
 from utils.functions import set_seed, prepare_dataset_t5
 set_seed(SEED)
 
-from utils.focal_loss_trainer import FocalLossTrainer
-
-import numpy as np
 import wandb, huggingface_hub, os
 import evaluate
-from transformers import TrainingArguments, Trainer, T5ForTokenClassification, AutoTokenizer
-from transformers import DataCollatorForTokenClassification
+from transformers import TrainingArguments, AdamW
+from utils.focal_loss_trainer import FocalLossTrainer
 
-# Login to wandb & Hugging Face
+import torch
+
+from models.t5_focal import T5ForTokenClassificationWithFocalLoss  # Your focal model
+
+# [LOGIN TO WANDB AND HF]
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
-# Prepare dataset and tokenizer for T5
+# [PREPARE DATASET]
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CLS_FOCAL)
-data_collator = DataCollatorForTokenClassification(tokenizer)
 
-# Define metric
+# [METRICS]
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    logits = np.nan_to_num(logits)
-    predictions = np.argmax(logits, axis=-1)
+    preds, labels = eval_pred
+    decoded_labels = []
+    decoded_preds = []
+    for label_seq, pred_seq in zip(labels, preds):
+        current_labels = []
+        current_preds = []
+        for label, pred in zip(label_seq, pred_seq):
+            if label != -100:
+                current_labels.append(ID2LABEL[label])
+                current_preds.append(ID2LABEL[pred])
+        decoded_labels.append(current_labels)
+        decoded_preds.append(current_preds)
+    return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
-
-    # Ignore special tokens (-100)
-    true_predictions = [
-        [ID2LABEL[p] for (p, l) in zip(prediction, label) if l != -100]
-        for prediction, label in zip(predictions, labels)
-    ]
-    true_labels = [
-        [ID2LABEL[l] for l in label if l != -100]
-        for label in labels
-    ]
-
-    # Debugging: Check the actual results for true predictions and labels
-    # print(f"True Predictions: {true_predictions[:5]}")
-    # print(f"True Labels: {true_labels[:5]}")
-
-    # Set zero_division to handle cases where recall and f1 are undefined
-    results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
-
-    # Log metrics (set default to 0 if not found in results)
-    precision = results.get("precision", 0.0)
-    recall = results.get("recall", 0.0)
-    f1 = results.get("f1", 0.0)
-
-    wandb.log({"eval/precision": precision, "eval/recall": recall, "eval/f1": f1})
-
-    return results
-
-# Create results directory
+# [CHECKPOINT & MODEL LOAD]
 os.makedirs(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL, exist_ok=True)
 
-# Load T5 model
-checkpoint = None
 def get_last_checkpoint(output_dir):
     checkpoints = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
     if checkpoints:
@@ -66,80 +47,101 @@ def get_last_checkpoint(output_dir):
     return None
 
 checkpoint = get_last_checkpoint(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL)
-
 if checkpoint:
-    model = T5ForTokenClassification.from_pretrained(checkpoint, num_labels=NUM_LABELS)
+    model = T5ForTokenClassificationWithFocalLoss.from_pretrained(checkpoint)
 else:
-    model = T5ForTokenClassification.from_pretrained(MODEL_T5_CLS_FOCAL, num_labels=NUM_LABELS)
-    model.gradient_checkpointing_enable()
+    model = T5ForTokenClassificationWithFocalLoss.from_pretrained(
+        MODEL_T5_CLS_FOCAL,
+        num_labels=NUM_LABELS,
+        ignore_mismatched_sizes=True
+    )
 
-model.to("cuda")
-
-# Create Training Arguments
+# [TRAINING ARGS]
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_T5_CLS_FOCAL,
     report_to="wandb",
-    evaluation_strategy="steps",
-    save_strategy="steps",
+    evaluation_strategy='steps',
+    save_strategy='steps',
     eval_steps=EVAL_STEPS_T5_CLS_FOCAL,
     save_steps=SAVE_STEPS_T5_CLS_FOCAL,
     per_device_train_batch_size=TRAIN_BATCH_SIZE_T5_CLS_FOCAL,
     per_device_eval_batch_size=EVAL_BATCH_SIZE_T5_CLS_FOCAL,
-    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CLS_FOCAL, 
+    num_train_epochs=NUM_TRAIN_EPOCHS_T5_CLS_FOCAL,
     weight_decay=WEIGHT_DECAY_T5_CLS_FOCAL,
-    learning_rate=LR_T5_CLS_FOCAL, 
+    learning_rate=LR_T5_CLS_FOCAL,
     output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/logs",
-    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_T5_CLS_FOCAL,
     logging_steps=LOGGING_STEPS_T5_CLS_FOCAL,
     load_best_model_at_end=True,
     metric_for_best_model="eval_overall_f1",
-    save_total_limit=2,
     greater_is_better=True,
+    save_total_limit=2,
     fp16=True,
-    seed=SEED,
+    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_T5_CLS_FOCAL,
+    seed=SEED
 )
 
-# Trainer 
+def preprocess_logits_for_metrics(logits, labels):
+    return logits.argmax(dim=-1)
+
+# [OPTIMIZER & LR SCHEDULER]
+optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_FOCAL)
+total_steps = len(train_dataset) * training_args.num_train_epochs
+
+class LinearDecayWithMinLR(torch.optim.lr_scheduler._LRScheduler):
+    def __init__(self, optimizer, min_lr, max_steps, last_epoch=-1):
+        self.min_lr = min_lr
+        self.max_steps = max_steps
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        step = self.last_epoch
+        lr_decay = max(0, (1 - step / self.max_steps)) * (self.base_lrs[0] - self.min_lr) + self.min_lr
+        return [lr_decay] * len(self.base_lrs)
+
+scheduler = LinearDecayWithMinLR(optimizer, min_lr=1e-6, max_steps=total_steps)
+
+# [TRAINER]
 trainer = FocalLossTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
-    data_collator=data_collator,
+    optimizers=(optimizer, scheduler),
     alpha=NER_CLASS_WEIGHTS,
     gamma=GAMMA,
-    loss_scale=LOSS_SCALE,
+    loss_scale=LOSS_SCALE
 )
 
-# Train
+
+
+# [TRAINING]
 if checkpoint:
     trainer.train(resume_from_checkpoint=checkpoint)
 else:
     trainer.train()
 
-# Evaluate
+# [EVALUATION]
 test_results = trainer.evaluate(test_dataset, metric_key_prefix="test")
 
-# Save model and tokenizer
+# [SAVE OUTPUTS]
 model.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL)
 tokenizer.save_pretrained(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL)
 
-# Save training arguments
 with open(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/training_args.txt", "w") as f:
     f.write(str(training_args))
 
-# Save test results
 with open(EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/test_results.txt", "w") as f:
     f.write(str(test_results))
 
-# Upload to Hugging Face
+# [UPLOAD TO HF HUB]
 api = huggingface_hub.HfApi()
 api.upload_large_folder(
-    folder_path=RESULTS_DIR_T5_CLS_FOCAL,
-    repo_id="auphong2707/nlp-ner",
+    folder_path=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL,
+    repo_id="auphong2707/nlp-ner-focal",
     repo_type="model",
     private=False
 )
