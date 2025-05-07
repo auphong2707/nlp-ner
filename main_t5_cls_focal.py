@@ -16,31 +16,28 @@ huggingface_hub.login(token=os.getenv("HUGGINGFACE_TOKEN"))
 
 # Load dataset and tokenizer
 train_dataset, val_dataset, test_dataset, tokenizer = prepare_dataset_t5(TOKENIZER_T5_CLS_FOCAL)
-data_collator = DataCollatorForTokenClassification(tokenizer)
 
 # Define evaluation metric
 metric = evaluate.load("seqeval")
 
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
-    preds = np.argmax(preds, axis=-1)
+    print(f"preds.shape: {preds.shape}, labels.shape: {labels.shape}")
 
-    decoded_preds, decoded_labels = [], []
-    for pred_seq, label_seq in zip(preds, labels):
-        # Ensure both are iterable (handle scalar case)
-        if not hasattr(pred_seq, '__iter__'):
-            pred_seq = [pred_seq]
-        if not hasattr(label_seq, '__iter__'):
-            label_seq = [label_seq]
-
-        p_seq, l_seq = [], []
-        for p, l in zip(pred_seq, label_seq):
-            if l != -100:
-                p_seq.append(ID2LABEL.get(p, "O"))  # fallback to "O" for unknown predictions
-                l_seq.append(ID2LABEL[l])
-        decoded_preds.append(p_seq)
-        decoded_labels.append(l_seq)
-
+    decoded_labels = []
+    decoded_preds = []
+    for label_seq, pred_seq in zip(labels, preds):
+        current_labels = []
+        current_preds = []
+        for label, pred in zip(label_seq, pred_seq):
+            # Filter out padding tokens (commonly set to -100)
+            if label != -100:
+                # Convert numerical IDs to string labels using your mapping
+                current_labels.append(ID2LABEL[label])
+                current_preds.append(ID2LABEL[pred])
+        decoded_labels.append(current_labels)
+        decoded_preds.append(current_preds)
+    
     return metric.compute(predictions=decoded_preds, references=decoded_labels)
 
 
@@ -116,7 +113,6 @@ trainer = FocalLossTrainer(
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     tokenizer=tokenizer,
-    data_collator=data_collator,
     compute_metrics=compute_metrics,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     optimizers=(optimizer, scheduler),
