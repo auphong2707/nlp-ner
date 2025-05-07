@@ -19,7 +19,9 @@ class RobertaCRF(RobertaPreTrainedModel):
 
         if labels is not None:
             # Calculate the negative log likelihood loss
-            loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
+            tags = labels.clone()
+            tags[labels == -100] = 0 
+            loss = -self.crf(emissions, tags, mask=mask, reduction='token_mean')            
             return {"loss": loss, "logits": emissions}
         else:
             # Get the predicted tags
