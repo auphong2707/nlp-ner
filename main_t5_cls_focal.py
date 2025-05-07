@@ -62,14 +62,6 @@ else:
                                                      num_labels=NUM_LABELS,
                                                      ignore_mismatched_sizes=True)
 
-# Optimizer and custom scheduler
-optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_FOCAL)
-
-num_training_steps = len(train_dataset) * NUM_TRAIN_EPOCHS_T5_CLS_FOCAL // TRAIN_BATCH_SIZE_T5_CLS_FOCAL
-scheduler = get_linear_schedule_with_warmup(optimizer,
-                                            num_warmup_steps=0,
-                                            num_training_steps=num_training_steps)
-
 # TrainingArguments
 training_args = TrainingArguments(
     run_name=EXPERIMENT_NAME_T5_CLS_FOCAL,
@@ -84,7 +76,6 @@ training_args = TrainingArguments(
     learning_rate=LR_T5_CLS_FOCAL,
     weight_decay=WEIGHT_DECAY_T5_CLS_FOCAL,
     num_train_epochs=NUM_TRAIN_EPOCHS_T5_CLS_FOCAL,
-    lr_scheduler_type="linear",  # Still required by HF API
     output_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL,
     logging_dir=EXPERIMENT_RESULTS_DIR_T5_CLS_FOCAL + "/logs",
     logging_steps=LOGGING_STEPS_T5_CLS_FOCAL,
@@ -106,7 +97,6 @@ trainer = FocalLossTrainer(
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
-    optimizers=(optimizer, scheduler),
     alpha=NER_CLASS_WEIGHTS,   
     gamma=GAMMA,               
     loss_scale=LOSS_SCALE      
