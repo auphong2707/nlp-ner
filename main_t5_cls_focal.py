@@ -93,7 +93,8 @@ training_args = TrainingArguments(
     greater_is_better=True,
     save_total_limit=2,
     fp16=True,
-    seed=SEED
+    seed=SEED,
+    max_grad_norm=MAX_GRAD_NORM_T5_CLS_FOCAL,
 )
 
 # Trainer
