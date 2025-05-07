@@ -5,7 +5,7 @@ from utils.focal_loss_trainer import FocalLossTrainer
 import os, wandb, huggingface_hub, evaluate
 import numpy as np
 import torch
-from transformers import T5ForTokenClassification, AdamW, TrainingArguments, DataCollatorForTokenClassification
+from transformers import T5ForTokenClassification, AdamW, TrainingArguments, get_linear_schedule_with_warmup
 
 # Set seed for reproducibility
 set_seed(SEED)
@@ -65,20 +65,10 @@ else:
 # Optimizer and custom scheduler
 optimizer = AdamW(model.parameters(), lr=LR_T5_CLS_FOCAL)
 
-total_steps = len(train_dataset) * NUM_TRAIN_EPOCHS_T5_CLS_FOCAL
-
-class LinearDecayWithMinLR(torch.optim.lr_scheduler._LRScheduler):
-    def __init__(self, optimizer, min_lr, max_steps, last_epoch=-1):
-        self.min_lr = min_lr
-        self.max_steps = max_steps
-        super().__init__(optimizer, last_epoch)
-
-    def get_lr(self):
-        step = max(0, self.last_epoch)
-        lr_decay = max(0, (1 - step / self.max_steps)) * (self.base_lrs[0] - self.min_lr) + self.min_lr
-        return [lr_decay] * len(self.base_lrs)
-
-scheduler = LinearDecayWithMinLR(optimizer, min_lr=1e-6, max_steps=total_steps)
+num_training_steps = len(train_dataset) * NUM_TRAIN_EPOCHS_T5_CLS_FOCAL // TRAIN_BATCH_SIZE_T5_CLS_FOCAL
+scheduler = get_linear_schedule_with_warmup(optimizer,
+                                            num_warmup_steps=0,
+                                            num_training_steps=num_training_steps)
 
 # TrainingArguments
 training_args = TrainingArguments(
