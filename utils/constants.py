@@ -160,7 +160,7 @@ WEIGHT_DECAY_T5_CLS_FOCAL = 0.001
 EVAL_STEPS_T5_CLS_FOCAL = 200
 SAVE_STEPS_T5_CLS_FOCAL = 200        
 GRADIENT_ACCUMULATION_STEPS_T5_CLS_FOCAL = 4
-MAX_GRAD_NORM_T5_CLS_FOCAL = 30
+MAX_GRAD_NORM_T5_CLS_FOCAL = 5
 
 LOGGING_STEPS_T5_CLS_FOCAL = 10
 # --------------------------------------------------------------------------------------------
