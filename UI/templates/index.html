@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>NER Web UI</title></head>
+<body>
+    <h2>NER Inference</h2>
+    <form id="ner-form">
+        <label for="model">Choose a model:</label>
+        <select name="model" id="model">
+            {% for key in model_keys %}
+                <option value="{{ key }}">{{ key }}</option>
+            {% endfor %}
+        </select><br><br>
+        <textarea name="text" rows="5" cols="60" placeholder="Enter your sentence..."></textarea><br>
+        <button type="submit">Extract Entities</button>
+    </form>
+
+    <h3>Entities:</h3>
+    <pre id="result"></pre>
+
+    <script>
+        document.getElementById("ner-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch("/ner/", {
+                method: "POST",
+                body: formData
+            });
+            const data = await response.json();
+            document.getElementById("result").innerText = JSON.stringify(data.entities || data.error, null, 2);
+        });
+    </script>
+</body>
+</html>
