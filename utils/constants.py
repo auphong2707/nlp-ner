@@ -86,19 +86,19 @@ MODEL_T5_CLS_CE = "t5-base"
 TOKENIZER_T5_CLS_CE = "t5-base"  
 
 RESULTS_DIR_T5_CLS_CE = RESULTS_DIR + "t5-cls-ce/"
-EXPERIMENT_NAME_T5_CLS_CE = "t5-cls-ce"
+EXPERIMENT_NAME_T5_CLS_CE = "t5-cls-ce-experiment-2"
 EXPERIMENT_RESULTS_DIR_T5_CLS_CE = RESULTS_DIR_T5_CLS_CE + EXPERIMENT_NAME_T5_CLS_CE
 
-LR_T5_CLS_CE = 2e-5               
+LR_T5_CLS_CE = 1e-5               
 TRAIN_BATCH_SIZE_T5_CLS_CE = 128    
 EVAL_BATCH_SIZE_T5_CLS_CE = 128   
 NUM_TRAIN_EPOCHS_T5_CLS_CE = 20    
 WEIGHT_DECAY_T5_CLS_CE = 0.001    
-EVAL_STEPS_T5_CLS_CE = 500       
-SAVE_STEPS_T5_CLS_CE = 500        
+EVAL_STEPS_T5_CLS_CE = 200       
+SAVE_STEPS_T5_CLS_CE = 200        
 GRADIENT_ACCUMULATION_STEPS_T5_CLS_CE = 1
 
-LOGGING_STEPS_T5_CLS_CE = 50
+LOGGING_STEPS_T5_CLS_CE = 20
 # --------------------------------------------------------------------------------------------
 
 
