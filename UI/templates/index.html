@@ -1,33 +1,197 @@
 <!DOCTYPE html>
-<html>
-<head><title>NER Web UI</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Named Entity Recognition</title>
+  <style>
+    body {
+      margin: 0;
+      background: #1e293b;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+    }
+
+    .sidebar {
+      background-color: #0f172a;
+      padding: 20px;
+      width: 260px;
+      min-height: 100vh;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar h3 {
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .sidebar li {
+      background-color: #1e293b;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .sidebar li:hover {
+      background-color: #334155;
+    }
+
+    .sidebar li.selected {
+      background-color: #6366f1;
+      font-weight: bold;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px;
+    }
+
+    .input-area textarea {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    button {
+      background-color: #6366f1;
+      color: white;
+      font-weight: bold;
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .token-box {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      border-radius: 8px;
+      padding: 4px 6px;
+      margin: 3px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .PER { background-color: #e11d48; color: white; }
+    .LOC { background-color: #2563eb; color: white; }
+    .ORG { background-color: #10b981; color: white; }
+    .ANIM { background-color: #f43f5e; color: white; }
+    .BIO { background-color: #c084fc; color: white; }
+    .CEL { background-color: #f87171; color: white; }
+    .DIS { background-color: #fb923c; color: white; }
+    .EVE { background-color: #facc15; color: black; }
+    .FOOD { background-color: #4ade80; color: black; }
+    .INST { background-color: #2dd4bf; color: black; }
+    .MEDIA { background-color: #38bdf8; color: black; }
+    .MYTH { background-color: #818cf8; color: white; }
+    .PLANT { background-color: #34d399; color: black; }
+    .TIME { background-color: #f472b6; color: white; }
+    .VEHI { background-color: #fcd34d; color: black; }
+    .O { background-color: transparent; color: white; }
+
+    .token-label {
+      font-size: 10px;
+      background-color: rgba(0,0,0,0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 3px;
+    }
+
+    .ner-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-top: 30px;
+    }
+  </style>
+</head>
 <body>
-    <h2>NER Inference</h2>
-    <form id="ner-form">
-        <label for="model">Choose a model:</label>
-        <select name="model" id="model">
-            {% for key in model_keys %}
-                <option value="{{ key }}">{{ key }}</option>
-            {% endfor %}
-        </select><br><br>
-        <textarea name="text" rows="5" cols="60" placeholder="Enter your sentence..."></textarea><br>
-        <button type="submit">Extract Entities</button>
-    </form>
+<div class="sidebar">
+  <h3>Models</h3>
+  <ul id="model-list">
+    {% for key in model_keys %}
+      <li data-model="{{ key }}">{{ key }}</li>
+    {% endfor %}
+  </ul>
+</div>
+<div class="main-content">
+  <h2>Named Entity Recognition</h2>
+  <form id="ner-form">
+    <input type="hidden" name="model" id="model-hidden" value="">
+    <div class="input-area">
+      <label for="text">Enter your sentence:</label>
+      <textarea name="text" id="text-input" rows="3" placeholder="Type your sentence here..."></textarea>
+      <button type="submit">Extract Entities</button>
+    </div>
+  </form>
+  <div class="ner-line" id="ner-result"></div>
+</div>
 
-    <h3>Entities:</h3>
-    <pre id="result"></pre>
+<script>
+  const ID2TAG = {
+    'LABEL_0': 'O','LABEL_1': 'B-PER','LABEL_2': 'I-PER','LABEL_3': 'B-ORG','LABEL_4': 'I-ORG','LABEL_5': 'B-LOC','LABEL_6': 'I-LOC','LABEL_7': 'B-ANIM','LABEL_8': 'I-ANIM','LABEL_9': 'B-BIO','LABEL_10': 'I-BIO','LABEL_11': 'B-CEL','LABEL_12': 'I-CEL','LABEL_13': 'B-DIS','LABEL_14': 'I-DIS','LABEL_15': 'B-EVE','LABEL_16': 'I-EVE','LABEL_17': 'B-FOOD','LABEL_18': 'I-FOOD','LABEL_19': 'B-INST','LABEL_20': 'I-INST','LABEL_21': 'B-MEDIA','LABEL_22': 'I-MEDIA','LABEL_23': 'B-MYTH','LABEL_24': 'I-MYTH','LABEL_25': 'B-PLANT','LABEL_26': 'I-PLANT','LABEL_27': 'B-TIME','LABEL_28': 'I-TIME','LABEL_29': 'B-VEHI','LABEL_30': 'I-VEHI','LABEL_-100': 'PAD'
+  };
 
-    <script>
-        document.getElementById("ner-form").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const response = await fetch("/ner/", {
-                method: "POST",
-                body: formData
-            });
-            const data = await response.json();
-            document.getElementById("result").innerText = JSON.stringify(data.entities || data.error, null, 2);
-        });
-    </script>
+  function getClassForTag(tag) {
+    const base = tag.replace(/^B-|^I-/, '');
+    return base in {
+      PER:1, LOC:1, ORG:1, ANIM:1, BIO:1, CEL:1, DIS:1, EVE:1, FOOD:1,
+      INST:1, MEDIA:1, MYTH:1, PLANT:1, TIME:1, VEHI:1
+    } ? base : 'O';
+  }
+
+  document.querySelectorAll('#model-list li').forEach(item => {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('#model-list li').forEach(li => li.classList.remove('selected'));
+      item.classList.add('selected');
+      document.getElementById('model-hidden').value = item.getAttribute('data-model');
+    });
+  });
+
+  document.getElementById("ner-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const response = await fetch("/ner/", {
+      method: "POST",
+      body: formData
+    });
+    const data = await response.json();
+    const tokens = data.tokens || [];
+    const rawLabels = data.labels || [];
+    const labels = rawLabels.map(label => ID2TAG[label] || label);
+    const resultDiv = document.getElementById("ner-result");
+    resultDiv.innerHTML = "";
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const label = labels[i];
+      if (token === '[CLS]' || token === '[SEP]') continue;
+      if (label !== "O") {
+        const box = document.createElement("div");
+        box.className = `token-box ${getClassForTag(label)}`;
+        box.innerHTML = `${token}<div class="token-label">${label.replace(/^B-|^I-/, '')}</div>`;
+        resultDiv.appendChild(box);
+      } else {
+        const span = document.createElement("span");
+        span.textContent = token + " ";
+        span.style.margin = "4px";
+        resultDiv.appendChild(span);
+      }
+    }
+  });
+</script>
 </body>
 </html>
