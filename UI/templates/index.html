@@ -150,7 +150,7 @@
             border-top: none;
             border-radius: 0 0 8px 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            /* Removed max-height and overflow-y to prevent scrolling */
+            /* Confirmed no max-height or overflow-y for no scrolling */
         }
         .model-item {
             padding: 10px;
@@ -194,11 +194,10 @@
         .token-wrapper {
             display: inline-flex;
             align-items: center;
-            border: 2px solid #FFFFFF; /* White border with increased thickness */
+            border: 2px solid #FFFFFF; /* White border for visibility */
             padding: 6px 10px;
             border-radius: 8px;
             margin-right: 3px;
-            background-color: #2A2A3B;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         /* Make the token (word with entity) bold */
@@ -216,50 +215,104 @@
             font-weight: 600;
             font-size: 0.9rem;
         }
+        /* Fallback for any unrecognized entity types */
+        [class^="entity-label-"] {
+            background-color: #444C56; /* Darker fallback */
+            color: #FFFFFF;
+        }
+        [class^="token-wrapper-"] {
+            background-color: #3A4355; /* Slightly lighter fallback */
+        }
+        /* Entity type-specific colors for the label box and token-wrapper */
         .entity-label-PER, .entity-label-B-PER, .entity-label-I-PER {
-            background-color: #FF6B6B;
+            background-color: #FF6B6B; /* Light red for smaller box */
+        }
+        .token-wrapper-PER {
+            background-color: #B33333; /* Darker red for bigger box */
         }
         .entity-label-LOC, .entity-label-B-LOC, .entity-label-I-LOC {
             background-color: #6C63FF;
         }
+        .token-wrapper-LOC {
+            background-color: #8033b3;
+        }
         .entity-label-ORG, .entity-label-B-ORG, .entity-label-I-ORG {
             background-color: #FFA500;
+        }
+        .token-wrapper-ORG {
+            background-color: #b37f33;
         }
         .entity-label-ANIM, .entity-label-B-ANIM, .entity-label-I-ANIM {
             background-color: #66ff66;
         }
+        .token-wrapper-ANIM {
+            background-color: #33b333;
+        }
         .entity-label-BIO, .entity-label-B-BIO, .entity-label-I-BIO {
             background-color: #66b3ff;
+        }
+        .token-wrapper-BIO {
+            background-color: #337fb3;
         }
         .entity-label-CEL, .entity-label-B-CEL, .entity-label-I-CEL {
             background-color: #ff66b3;
         }
+        .token-wrapper-CEL {
+            background-color: #b3337f;
+        }
         .entity-label-DIS, .entity-label-B-DIS, .entity-label-I-DIS {
             background-color: #ffb366;
+        }
+        .token-wrapper-DIS {
+            background-color: #b37f33;
         }
         .entity-label-EVE, .entity-label-B-EVE, .entity-label-I-EVE {
             background-color: #66cccc;
         }
+        .token-wrapper-EVE {
+            background-color: #339999;
+        }
         .entity-label-FOOD, .entity-label-B-FOOD, .entity-label-I-FOOD {
             background-color: #ff9966;
+        }
+        .token-wrapper-FOOD {
+            background-color: #b36633;
         }
         .entity-label-INST, .entity-label-B-INST, .entity-label-I-INST {
             background-color: #b3ff66;
         }
+        .token-wrapper-INST {
+            background-color: #80b333;
+        }
         .entity-label-MEDIA, .entity-label-B-MEDIA, .entity-label-I-MEDIA {
             background-color: #66b3ff;
+        }
+        .token-wrapper-MEDIA {
+            background-color: #337fb3;
         }
         .entity-label-MYTH, .entity-label-B-MYTH, .entity-label-I-MYTH {
             background-color: #ff66b3;
         }
+        .token-wrapper-MYTH {
+            background-color: #b3337f;
+        }
         .entity-label-PLANT, .entity-label-B-PLANT, .entity-label-I-PLANT {
             background-color: #66ffb3;
+        }
+        .token-wrapper-PLANT {
+            background-color: #33b37f;
         }
         .entity-label-TIME, .entity-label-B-TIME, .entity-label-I-TIME {
             background-color: #b366ff;
         }
+        .token-wrapper-TIME {
+            background-color: #8033b3;
+        }
         .entity-label-VEHI, .entity-label-B-VEHI, .entity-label-I-VEHI {
             background-color: #ffb3ff;
+        }
+        .token-wrapper-VEHI {
+            background-color: #b37fb3;
         }
         .entity-label-O, .entity-label-PAD {
             display: none;
