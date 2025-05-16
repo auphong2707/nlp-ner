@@ -75,8 +75,8 @@
         }
         /* Add scroll to input textarea */
         .form-control {
-            max-height: 200px;
-            overflow-y: auto;
+            /* No max-height to allow textarea to grow with content */
+            overflow-y: auto; /* Allows scrolling if content overflows */
             width: 100%;
         }
         .form-control::placeholder {
@@ -150,7 +150,7 @@
             border-top: none;
             border-radius: 0 0 8px 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            /* Confirmed no max-height or overflow-y for no scrolling */
+            /* No max-height or overflow-y for no scrolling */
         }
         .model-item {
             padding: 10px;
@@ -378,7 +378,7 @@
             <form id="extract-form-main">
                 <div class="mb-3" style="margin-top: 92px;">
                     <label for="text" class="form-label">Input Text:</label>
-                    <textarea class="form-control" id="text" name="text" rows="4" placeholder="Enter text (e.g., Duc Minh Vu is handsome and from Hanoi.)" aria-describedby="textHelp" required>{{ input_text if input_text else '' }}</textarea>
+                    <textarea class="form-control" id="text" name="text" rows="6" placeholder="Enter text (e.g., Duc Minh Vu is handsome and from Hanoi.)" aria-describedby="textHelp" required>{{ input_text if input_text else '' }}</textarea>
                     <div id="textHelp" class="form-text">Enter text to extract Named Entities.</div>
                 </div>
                 <div class="button-container">
