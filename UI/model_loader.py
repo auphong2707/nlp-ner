@@ -1,15 +1,38 @@
 import torch
-from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTokenClassification, T5Config
+from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTokenClassification, T5Config, RobertaPreTrainedModel
 import sys
 import os
 from typing import Tuple, List, Union
-from huggingface_hub import HfApi
+from torchcrf import CRF
 
 # Add the parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from models.model_t5_crf import T5CRF  # Absolute import after adjusting sys.path
 from models.model_bert_crf import BertCRF  # Import the custom BertCRF class
+
+# Placeholder for RobertaCRF (to be replaced with actual implementation from model_roberta_crf.py)
+class RobertaCRF(RobertaPreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.roberta = AutoModelForTokenClassification(config)
+        self.crf = CRF(num_tags=config.num_labels, batch_first=True)
+        self.init_weights()
+
+    def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None):
+        outputs = self.roberta(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
+        emissions = outputs.logits  # Shape: (batch_size, sequence_length, num_labels)
+
+        mask = attention_mask.bool() if attention_mask is not None else None
+
+        if labels is not None:
+            labels = labels.clone()
+            labels[labels == -100] = 0
+            loss = -self.crf(emissions, labels, mask=mask, reduction='token_mean')
+            return {"loss": loss, "logits": emissions}
+        else:
+            predictions = self.crf.decode(emissions, mask=mask)
+            return {"logits": emissions, "predictions": predictions}
 
 class BaseModelLoader:
     """Base class for model loaders."""
@@ -51,15 +74,23 @@ class BertModelLoader(BaseModelLoader):
             raise Exception(f"Error loading BERT model '{self.model_name}': {str(e)}")
 
 class RobertaModelLoader(BaseModelLoader):
-    """Loader for RoBERTa-based models."""
-    def load(self) -> Tuple[AutoModelForTokenClassification, AutoTokenizer]:
+    """Loader for RoBERTa-based models, including custom RobertaCRF."""
+    def load(self) -> Tuple[Union[AutoModelForTokenClassification, RobertaCRF], AutoTokenizer]:
         try:
             print(f"Loading RoBERTa model from {self.huggingface_repo}, subfolder: {self.model_name}...")
             # Load the model and tokenizer from the root subfolder
-            self.model = AutoModelForTokenClassification.from_pretrained(
-                self.huggingface_repo,
-                subfolder=self.model_name
-            )
+            if self.model_name == "roberta+crf-experiment-3":
+                # Use custom RobertaCRF for roberta+crf-experiment-3
+                self.model = RobertaCRF.from_pretrained(
+                    self.huggingface_repo,
+                    subfolder=self.model_name
+                )
+            else:
+                # Use standard RobertaForTokenClassification for other RoBERTa models
+                self.model = AutoModelForTokenClassification.from_pretrained(
+                    self.huggingface_repo,
+                    subfolder=self.model_name
+                )
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.huggingface_repo,
                 subfolder=self.model_name
@@ -114,13 +145,6 @@ class T5FocalModelLoader(BaseModelLoader):
             repo = "auphong2707/nlp-ner-t5-focal"
             print(f"Loading T5 model from {repo}...")
             
-            # Temporary debugging to confirm files in the repository (root level)
-            api = HfApi()
-            repo_files = []
-            for file_info in api.list_repo_files(repo_id=repo, repo_type="model"):
-                repo_files.append(file_info)
-            print(f"Files in {repo}: {repo_files}")
-
             # Load from the root of the repository (no subfolder)
             subfolder = ""
 
