@@ -3,6 +3,7 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTo
 import sys
 import os
 from typing import Tuple, List, Union
+from huggingface_hub import HfApi
 
 # Add the parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -69,7 +70,7 @@ class RobertaModelLoader(BaseModelLoader):
             raise Exception(f"Error loading RoBERTa model '{self.model_name}': {str(e)}")
 
 class T5ModelLoader(BaseModelLoader):
-    """Loader for T5-based models."""
+    """Loader for T5-based models (excluding T5-cls-focal-experiment-(5e-4))."""
     def load(self) -> Tuple[T5ForTokenClassification, AutoTokenizer]:
         try:
             print(f"Loading T5 model from {self.huggingface_repo}, subfolder: {self.model_name}...")
@@ -96,6 +97,52 @@ class T5ModelLoader(BaseModelLoader):
             # Load the tokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.huggingface_repo,
+                subfolder=subfolder,
+                use_fast=True
+            )
+            
+            print(f"Successfully loaded T5 model: {self.model_name}")
+            return self.model, self.tokenizer
+        except Exception as e:
+            print(f"Failed to load T5 model '{self.model_name}': {str(e)}")
+            raise Exception(f"Error loading T5 model '{self.model_name}': {str(e)}")
+
+class T5FocalModelLoader(BaseModelLoader):
+    """Loader specifically for T5-cls-focal-experiment-(5e-4) from a different repository."""
+    def load(self) -> Tuple[T5ForTokenClassification, AutoTokenizer]:
+        try:
+            repo = "auphong2707/nlp-ner-t5-focal"
+            print(f"Loading T5 model from {repo}...")
+            
+            # Temporary debugging to confirm files in the repository (root level)
+            api = HfApi()
+            repo_files = []
+            for file_info in api.list_repo_files(repo_id=repo, repo_type="model"):
+                repo_files.append(file_info)
+            print(f"Files in {repo}: {repo_files}")
+
+            # Load from the root of the repository (no subfolder)
+            subfolder = ""
+
+            # Load the configuration
+            config = T5Config.from_pretrained(
+                repo,
+                subfolder=subfolder
+            )
+            # Set num_labels to 31 to match checkpoint
+            config.num_labels = 31
+            print(f"Loaded configuration for {self.model_name}: architectures={config.architectures}, num_labels={config.num_labels}")
+
+            # Load the model with the configuration
+            self.model = T5ForTokenClassification.from_pretrained(
+                repo,
+                subfolder=subfolder,
+                config=config
+            )
+
+            # Load the tokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                repo,
                 subfolder=subfolder,
                 use_fast=True
             )
@@ -148,13 +195,14 @@ class ModelLoaderFactory:
             "roberta-cls-ce-experiment-2": "roberta",
             "bert+crf-experiment-5": "bert",
             "t5-cls-ce-experiment-1": "t5",
-            "T5-cls-focal-experiment-(5e-4)": "t5",
+            "T5-cls-focal-experiment-(5e-4)": "t5_focal",
             "roberta+crf-experiment-3": "roberta"
         }
         self.loader_map = {
             "bert": BertModelLoader,
             "roberta": RobertaModelLoader,
             "t5": T5ModelLoader,
+            "t5_focal": T5FocalModelLoader,
             "t5_crf": T5CRFModelLoader
         }
 
