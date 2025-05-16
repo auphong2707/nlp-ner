@@ -3,154 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NER Model Interface</title>
+    <title>Named Entity Recognition</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Google Fonts for Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #1E1E2F; /* Refined dark background */
             font-family: 'Roboto', sans-serif;
+            color: #FFFFFF; /* White primary text */
+            margin: 0;
+            height: 100vh;
+            display: flex;
         }
-        .container {
-            max-width: 900px;
-            margin-top: 2rem;
+        /* Sidebar for model selection */
+        .sidebar {
+            width: 25%;
+            background-color: #2A2A3B; /* Card/panel background */
+            padding: 30px; /* Increased padding for breathing room */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+            height: 100vh;
+            overflow-y: hidden; /* Prevent sidebar scrolling */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        /* Main content area */
+        .main-content {
+            width: 75%;
+            padding: 40px; /* Increased padding for breathing room */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
         .card {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            background-color: transparent;
+        }
+        /* Override Bootstrap heading colors */
+        .card h1 {
+            color: #FFFFFF;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 30px; /* Increased spacing */
         }
         .form-label {
-            font-weight: 600;
-            color: #343a40;
+            font-weight: 700;
+            color: #FFFFFF;
+            font-size: 1.4rem;
+            margin-bottom: 10px; /* Added spacing below label */
+        }
+        .form-control {
+            background-color: #2A2A3B; /* Card/panel background */
+            color: #FFFFFF;
+            border: 1px solid #444;
+            border-radius: 8px; /* Rounded corners */
+            font-size: 1.1rem;
+            padding: 12px; /* Modern padding */
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+        }
+        /* Override focus state for form inputs */
+        .form-control:focus {
+            background-color: #2A2A3B;
+            color: #FFFFFF;
+            border-color: #00C9A7; /* Mint Green border on focus */
+            box-shadow: 0 0 0 0.25rem rgba(0, 201, 167, 0.25); /* Mint Green focus ring */
+        }
+        /* Add scroll to input textarea */
+        .form-control {
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+        }
+        .form-control::placeholder {
+            color: #BBBBBB; /* Secondary text color */
+        }
+        .form-text {
+            color: #BBBBBB; /* Secondary text color */
+            font-size: 1rem;
+            margin-top: 8px; /* Added spacing above help text */
+        }
+        .invalid-feedback, .model-error {
+            color: #ff6666;
+            font-size: 1rem;
+            margin-top: 8px; /* Added spacing */
         }
         .btn-primary {
-            background-color: #007bff;
+            background-color: #00C9A7; /* Mint Green for Extract button */
+            color: #FFFFFF;
             border: none;
-            transition: background-color 0.3s;
+            padding: 12px 24px;
+            border-radius: 8px; /* Rounded corners */
+            font-weight: 700; /* Bold text */
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
         }
         .btn-primary:hover {
-            background-color: #0056b3;
+            background-color: #00B89A; /* Darker Mint Green on hover */
+        }
+        .btn-secondary {
+            background-color: #1DB954; /* Spotify Green for Clear button */
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px; /* Rounded corners */
+            font-weight: 700; /* Bold text */
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+        }
+        .btn-secondary:hover {
+            background-color: #1AA34A; /* Darker Spotify Green on hover */
+        }
+        /* Button container to align buttons */
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px; /* Increased spacing */
+        }
+        /* Custom model selection box */
+        .model-selection-box {
+            background-color: #2A2A3B;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #FFFFFF;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .model-selection-box:hover {
+            background-color: #444C56;
+        }
+        /* Model list items */
+        .model-list {
+            background-color: #2A2A3B;
+            border: 1px solid #444;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            /* Removed max-height and overflow-y to prevent scrolling */
+        }
+        .model-item {
+            padding: 10px;
+            margin: 6px;
+            cursor: pointer;
+            color: #FFFFFF;
+            background-color: #444C56;
+            border: 2px solid #5A6577;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: left;
+        }
+        .model-item:hover {
+            background-color: #00C9A7; /* Mint Green highlight on hover */
         }
         .output {
             display: none;
-            margin-top: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid #444;
+            border-radius: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            width: 100%;
+            padding: 20px;
+            background-color: #2A2A3B;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         .output.visible {
             display: block;
+        }
+        .alert-danger {
+            background-color: #4a1e1e;
+            color: #ff9999;
+            border-color: #662222;
+            font-size: 1rem;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 1rem;
         }
         /* Outer box for word and entity label */
         .token-wrapper {
             display: inline-flex;
             align-items: center;
-            border: 2px solid #ccc; /* Cardboard-like border */
-            background-color: transparent; /* Transparent background */
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin-right: 8px;
+            border: 2px solid #FFFFFF; /* White border with increased thickness */
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-right: 3px;
+            background-color: #2A2A3B;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
-        /* Entity label box */
+        /* Make the token (word with entity) bold */
+        .token-wrapper > span:first-child {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        /* Entity label box (tag) */
         .entity-label-box {
-            padding: 2px 6px;
-            border-radius: 3px;
-            color: #fff; /* White text for better contrast */
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin-left: 4px;
+            display: inline-block;
+            padding: 6px 10px;
+            margin: 4px 0 4px 6px;
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
-        /* Entity type-specific colors for the label box */
         .entity-label-PER, .entity-label-B-PER, .entity-label-I-PER {
-            background-color: #ff9999; /* Pinkish-red for PER */
+            background-color: #FF6B6B;
         }
         .entity-label-LOC, .entity-label-B-LOC, .entity-label-I-LOC {
-            background-color: #cc99ff; /* Purple for LOC */
+            background-color: #6C63FF;
         }
         .entity-label-ORG, .entity-label-B-ORG, .entity-label-I-ORG {
-            background-color: #ffcc99; /* Orange for ORG */
+            background-color: #FFA500;
         }
         .entity-label-ANIM, .entity-label-B-ANIM, .entity-label-I-ANIM {
-            background-color: #99ff99; /* Green for ANIM */
+            background-color: #66ff66;
         }
         .entity-label-BIO, .entity-label-B-BIO, .entity-label-I-BIO {
-            background-color: #99ccff; /* Blue for BIO */
+            background-color: #66b3ff;
         }
         .entity-label-CEL, .entity-label-B-CEL, .entity-label-I-CEL {
-            background-color: #ff99cc; /* Pink for CEL */
+            background-color: #ff66b3;
         }
         .entity-label-DIS, .entity-label-B-DIS, .entity-label-I-DIS {
-            background-color: #ffcc66; /* Yellow-orange for DIS */
+            background-color: #ffb366;
         }
         .entity-label-EVE, .entity-label-B-EVE, .entity-label-I-EVE {
-            background-color: #66cccc; /* Teal for EVE */
+            background-color: #66cccc;
         }
         .entity-label-FOOD, .entity-label-B-FOOD, .entity-label-I-FOOD {
-            background-color: #ff9966; /* Coral for FOOD */
+            background-color: #ff9966;
         }
         .entity-label-INST, .entity-label-B-INST, .entity-label-I-INST {
-            background-color: #ccff66; /* Light green for INST */
+            background-color: #b3ff66;
         }
         .entity-label-MEDIA, .entity-label-B-MEDIA, .entity-label-I-MEDIA {
-            background-color: #66ccff; /* Light blue for MEDIA */
+            background-color: #66b3ff;
         }
         .entity-label-MYTH, .entity-label-B-MYTH, .entity-label-I-MYTH {
-            background-color: #ff66cc; /* Magenta for MYTH */
+            background-color: #ff66b3;
         }
         .entity-label-PLANT, .entity-label-B-PLANT, .entity-label-I-PLANT {
-            background-color: #99ffcc; /* Mint green for PLANT */
+            background-color: #66ffb3;
         }
         .entity-label-TIME, .entity-label-B-TIME, .entity-label-I-TIME {
-            background-color: #cc66ff; /* Violet for TIME */
+            background-color: #b366ff;
         }
         .entity-label-VEHI, .entity-label-B-VEHI, .entity-label-I-VEHI {
-            background-color: #ffccff; /* Light purple for VEHI */
+            background-color: #ffb3ff;
         }
         .entity-label-O, .entity-label-PAD {
-            display: none; /* Hide label box for O and PAD */
-        }
-        /* Fallback for any unrecognized entity types */
-        [class^="entity-label-"] {
-            background-color: #e9ecef;
-            color: #000;
+            display: none;
         }
         .token {
-            margin-right: 8px;
+            margin-right: 3px;
             display: inline-block;
+            color: #FFFFFF;
+            font-size: 1.1rem;
         }
         .no-tokens {
-            color: #6c757d;
+            color: #FFFFFF;
             font-style: italic;
+            font-size: 1rem;
         }
         .spinner-container {
             display: none;
             text-align: center;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
         .spinner-container.visible {
             display: block;
         }
+        .spinner-border {
+            border-color: #00C9A7;
+            border-right-color: transparent;
+            width: 2.5rem;
+            height: 2.5rem;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card p-4">
-            <h1 class="text-center mb-4">NER Model Interface</h1>
+    <!-- Sidebar for model selection -->
+    <div class="sidebar">
+        <div class="card">
+            <h1 class="text-center mb-4">Named Entity Recognition</h1>
             <form id="extract-form" class="needs-validation" novalidate>
                 <div class="mb-3">
+                    <label for="model" class="form-label">Select Model:</label>
+                    <!-- Hidden input to store selected model -->
+                    <input type="hidden" id="selectedModel" name="model">
+                    <!-- Model selection box -->
+                    <div class="model-selection-box" data-bs-toggle="collapse" data-bs-target="#modelList" aria-expanded="false" aria-controls="modelList">
+                        <span id="selectedModelText">--Please choose a model--</span>
+                        <span>▼</span>
+                    </div>
+                    <!-- Collapsible model list -->
+                    <div class="collapse" id="modelList">
+                        <div class="model-list">
+                            {% for model in models %}
+                                <div class="model-item" data-value="{{ model }}" onclick="selectModel('{{ model }}', '{{ model }}')">{{ model }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div id="modelError" class="model-error" style="display: none;">Please select a model.</div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Main content area -->
+    <div class="main-content">
+        <div class="card">
+            <form id="extract-form-main">
+                <div class="mb-3" style="margin-top: 92px;">
                     <label for="text" class="form-label">Input Text:</label>
                     <textarea class="form-control" id="text" name="text" rows="4" placeholder="Enter text (e.g., Duc Minh Vu is handsome and from Hanoi.)" aria-describedby="textHelp" required>{{ input_text if input_text else '' }}</textarea>
-                    <div id="textHelp" class="form-text">Enter text to extract named entities.</div>
-                    <div class="invalid-feedback">Please enter some text.</div>
+                    <div id="textHelp" class="form-text">Enter text to extract Named Entities.</div>
                 </div>
-                <div class="mb-3">
-                    <label for="model" class="form-label">Select Model:</label>
-                    <select class="form-select" id="model" name="model" required>
-                        {% for model in models %}
-                            <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>{{ model }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="invalid-feedback">Please select a model.</div>
+                <div class="button-container">
+                    <button type="submit" class="btn btn-primary">Extract</button>
+                    <button type="button" class="btn btn-secondary" id="clearButton">Clear</button>
                 </div>
-                <button type="submit" class="btn btn-primary">Extract</button>
             </form>
             <div class="spinner-container" id="spinner">
                 <div class="spinner-border text-primary" role="status">
@@ -158,16 +339,15 @@
                 </div>
             </div>
             {% if error %}
-                <div class="alert alert-danger mt-3" role="alert">{{ error }}</div>
+                <div class="alert alert-danger mt-3" role="alert" id="errorMessage">{{ error }}</div>
             {% endif %}
             <div class="output card p-3 {% if token_label_pairs or error %}visible{% endif %}" id="output">
-                <h3 class="card-title">Results:</h3>
                 {% if token_label_pairs %}
                     <p class="card-text">
                         {% for pair in token_label_pairs %}
                             <span class="token">
                                 {% if pair.label != 'O' and pair.label != 'PAD' %}
-                                    <span class="token-wrapper">
+                                    <span class="token-wrapper token-wrapper-{{ pair.type }}">
                                         <span>{{ pair.token }}</span>
                                         <span class="entity-label-box entity-label-{{ pair.type }}">{{ pair.label }}</span>
                                     </span>
@@ -187,17 +367,85 @@
     <!-- Bootstrap JS and Popper.js -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
-        // Bootstrap form validation
+        // Function to handle model selection
+        function selectModel(value, displayText) {
+            const selectedModelInput = document.getElementById('selectedModel');
+            const selectedModelText = document.getElementById('selectedModelText');
+            selectedModelInput.value = value;
+            selectedModelText.textContent = displayText;
+            // Collapse the list after selection
+            const collapseElement = document.getElementById('modelList');
+            const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                toggle: false
+            });
+            bsCollapse.hide();
+        }
+
+        // Bootstrap form validation and custom model validation
         (function () {
             'use strict';
-            const form = document.getElementById('extract-form');
-            form.addEventListener('submit', function (event) {
+            const formSidebar = document.getElementById('extract-form');
+            const formMain = document.getElementById('extract-form-main');
+            const selectedModelInput = document.getElementById('selectedModel');
+            const modelError = document.getElementById('modelError');
+            const textInput = document.getElementById('text');
+            const textHelp = document.getElementById('textHelp');
+            const output = document.getElementById('output');
+            const clearButton = document.getElementById('clearButton');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Hide form help text when user starts typing
+            textInput.addEventListener('input', function () {
+                if (textInput.value.trim() !== '') {
+                    textHelp.style.display = 'none';
+                } else {
+                    textHelp.style.display = 'block';
+                }
+            });
+
+            // Clear button functionality
+            clearButton.addEventListener('click', function () {
+                // Explicitly clear the textarea
+                textInput.value = '';
+                // Explicitly reset the model selection to the default option
+                selectedModelInput.value = '';
+                document.getElementById('selectedModelText').textContent = '--Please choose a model--';
+                // Show form help text
+                textHelp.style.display = 'block';
+                // Hide output
+                output.classList.remove('visible');
+                output.innerHTML = '<p class="no-tokens">No tokens processed. Please enter text and extract.</p>';
+                // Hide model error
+                modelError.style.display = 'none';
+                // Hide any error messages
+                if (errorMessage) {
+                    errorMessage.remove();
+                }
+                // Reset form validation state
+                formSidebar.classList.remove('was-validated');
+                formMain.classList.remove('was-validated');
+            });
+
+            // Handle form submission from the main content area
+            formMain.addEventListener('submit', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                if (form.checkValidity()) {
+
+                // Reset model error
+                modelError.style.display = 'none';
+
+                // Check if a model is selected
+                if (!selectedModelInput.value) {
+                    modelError.style.display = 'block';
+                    formSidebar.classList.add('was-validated');
+                    return;
+                }
+
+                // Proceed with form submission if validation passes
+                if (formMain.checkValidity()) {
                     submitForm();
                 }
-                form.classList.add('was-validated');
+                formMain.classList.add('was-validated');
             }, false);
         })();
 
@@ -211,10 +459,13 @@
 
         // Form submission with Fetch API
         async function submitForm() {
-            const form = document.getElementById('extract-form');
+            const formSidebar = document.getElementById('extract-form');
+            const formMain = document.getElementById('extract-form-main');
             const spinner = document.getElementById('spinner');
             const output = document.getElementById('output');
-            const formData = new FormData(form);
+            const formData = new FormData(formSidebar);
+            const textInput = document.getElementById('text');
+            formData.append('text', textInput.value);
 
             // Show spinner
             spinner.classList.add('visible');
@@ -245,7 +496,7 @@
                     if (existingError) {
                         existingError.replaceWith(newError);
                     } else {
-                        form.insertAdjacentElement('afterend', newError);
+                        formMain.insertAdjacentElement('afterend', newError);
                     }
                 } else if (existingError) {
                     existingError.remove();
@@ -260,8 +511,9 @@
                 console.error('Error:', error);
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'alert alert-danger mt-3';
+                errorDiv.id = 'errorMessage';
                 errorDiv.textContent = 'An error occurred while processing the request.';
-                form.insertAdjacentElement('afterend', errorDiv);
+                formMain.insertAdjacentElement('afterend', errorDiv);
             } finally {
                 spinner.classList.remove('visible');
             }
