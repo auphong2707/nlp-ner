@@ -376,7 +376,7 @@
     <div class="main-content">
         <div class="card">
             <form id="extract-form-main">
-                <div class="mb-3" style="margin-top: 92px;">
+                <div class="mb-3">
                     <label for="text" class="form-label">Input Text:</label>
                     <textarea class="form-control" id="text" name="text" rows="6" placeholder="Enter text (e.g., Duc Minh Vu is handsome and from Hanoi.)" aria-describedby="textHelp" required>{{ input_text if input_text else '' }}</textarea>
                     <div id="textHelp" class="form-text">Enter text to extract Named Entities.</div>
@@ -477,6 +477,9 @@
                 // Reset form validation state
                 formSidebar.classList.remove('was-validated');
                 formMain.classList.remove('was-validated');
+                // Scroll input and output to top
+                textInput.scrollTop = 0;
+                output.scrollTop = 0;
             });
 
             // Handle form submission from the main content area
@@ -516,8 +519,8 @@
             const formMain = document.getElementById('extract-form-main');
             const spinner = document.getElementById('spinner');
             const output = document.getElementById('output');
-            const formData = new FormData(formSidebar);
             const textInput = document.getElementById('text');
+            const formData = new FormData(formSidebar);
             formData.append('text', textInput.value);
 
             // Show spinner
@@ -540,6 +543,9 @@
                 if (newOutput) {
                     output.innerHTML = newOutput.innerHTML;
                     output.classList.add('visible');
+                    // Scroll input and output to top after successful extraction
+                    textInput.scrollTop = 0;
+                    output.scrollTop = 0;
                 }
 
                 // Update error messages if any
