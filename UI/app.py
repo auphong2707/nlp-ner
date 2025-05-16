@@ -29,6 +29,42 @@ available_models = factory.get_available_models()
 # Cache for loaded models
 model_cache = {}
 
+# Define the ID2LABEL mapping
+ID2LABEL = {
+    0: "O",
+    1: "B-PER",
+    2: "I-PER",
+    3: "B-ORG",
+    4: "I-ORG",
+    5: "B-LOC",
+    6: "I-LOC",
+    7: "B-ANIM",
+    8: "I-ANIM",
+    9: "B-BIO",
+    10: "I-BIO",
+    11: "B-CEL",
+    12: "I-CEL",
+    13: "B-DIS",
+    14: "I-DIS",
+    15: "B-EVE",
+    16: "I-EVE",
+    17: "B-FOOD",
+    18: "I-FOOD",
+    19: "B-INST",
+    20: "I-INST",
+    21: "B-MEDIA",
+    22: "I-MEDIA",
+    23: "B-MYTH",
+    24: "I-MYTH",
+    25: "B-PLANT",
+    26: "I-PLANT",
+    27: "B-TIME",
+    28: "I-TIME",
+    29: "B-VEHI",
+    30: "I-VEHI",
+    -100: "PAD"
+}
+
 # Simple test route to confirm the server is responding
 @app.get("/test")
 async def test():
@@ -94,10 +130,8 @@ def process_text(text: str, model_name: str) -> dict:
             predicted_labels = torch.argmax(logits, dim=-1).cpu().numpy()[0]  # Take argmax for predictions
             logger.info(f"Model {model_name} - Predicted label IDs: {predicted_labels.tolist()}")
 
-        # Get label names (assuming the model config has id2label)
-        id2label = model.config.id2label
-        logger.info(f"Model {model_name} - id2label mapping: {id2label}")
-        predicted_labels_str = [id2label[label_id] for label_id in predicted_labels]
+        # Convert label IDs to label names using ID2LABEL
+        predicted_labels_str = [ID2LABEL.get(label_id, "O") for label_id in predicted_labels]
         logger.info(f"Model {model_name} - Predicted labels: {predicted_labels_str}")
 
         # Map tokens back to words
