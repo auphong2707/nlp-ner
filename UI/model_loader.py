@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForConditionalGeneration, T5Config
+from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTokenClassification, T5Config
 from typing import Tuple, List, Union
 
 class ModelLoader:
@@ -38,7 +38,7 @@ class ModelLoader:
         self.tokenizer = None
         self.loaded_model_name = None
 
-    def load_model(self, model_name: str) -> Tuple[Union[AutoModelForTokenClassification, T5ForConditionalGeneration], AutoTokenizer]:
+    def load_model(self, model_name: str) -> Tuple[Union[AutoModelForTokenClassification, T5ForTokenClassification], AutoTokenizer]:
         """
         Load a specific model and tokenizer from the Hugging Face repository.
         
@@ -69,18 +69,10 @@ class ModelLoader:
                         subfolder=model_name
                     )
                 elif model_type == "t5":
-                    # Load T5 model using T5ForConditionalGeneration
-                    # Note: This is a fallback; the model was fine-tuned with T5ForTokenClassification,
-                    # which is not a standard class in transformers
-                    self.model = T5ForConditionalGeneration.from_pretrained(
+                    self.model = T5ForTokenClassification.from_pretrained(
                         self.huggingface_repo,
                         subfolder=model_name
                     )
-                    print(f"Warning: Loaded T5 model '{model_name}' using T5ForConditionalGeneration. "
-                          "This model was fine-tuned for token classification (NER) with T5ForTokenClassification, "
-                          "which is not a standard class in the transformers library. "
-                          "You may need to use the custom T5ForTokenClassification class used during training "
-                          "to perform NER inference correctly.")
                 else:
                     raise ValueError(f"Unsupported model type for '{model_name}': {model_type}")
 
