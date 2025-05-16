@@ -1,5 +1,12 @@
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTokenClassification, T5Config
+import sys
+import os
+
+# Add the parent directory (D:\Code\nlp-ner) to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from models.model_t5_crf import T5CRF  # Absolute import after adjusting sys.path
 from typing import Tuple, List, Union
 
 class ModelLoader:
@@ -13,32 +20,32 @@ class ModelLoader:
         self.huggingface_repo = huggingface_repo
         self.available_models = [
             "bert-cls-ce-experiment-2",
-            "TS+CRF-first",
+            "T5+CRF-experiment-first",
             "bert-cls-focal-experiment-2",
             "roberta-cls-focal-experiment-1",
             "roberta-cls-ce-experiment-2",
             "bert+crf-experiment-5",
-            "ts-cls-ce-experiment-1",
-            "ts-cls-focal-experiment-(5e-4)",
+            "t5-cls-ce-experiment-1",
+            "T5-cls-focal-experiment-(5e-4)",
             "roberta+crf-experiment-3"
         ]
         # Mapping of model names to their expected architectures
         self.model_type_map = {
             "bert-cls-ce-experiment-2": "bert",
-            "TS+CRF-first": "t5",
+            "T5+CRF-experiment-first": "t5_crf",
             "bert-cls-focal-experiment-2": "bert",
             "roberta-cls-focal-experiment-1": "roberta",
             "roberta-cls-ce-experiment-2": "roberta",
             "bert+crf-experiment-5": "bert",
-            "ts-cls-ce-experiment-1": "t5",
-            "ts-cls-focal-experiment-(5e-4)": "t5",
+            "t5-cls-ce-experiment-1": "t5",
+            "T5-cls-focal-experiment-(5e-4)": "t5",
             "roberta+crf-experiment-3": "roberta"
         }
         self.model = None
         self.tokenizer = None
         self.loaded_model_name = None
 
-    def load_model(self, model_name: str) -> Tuple[Union[AutoModelForTokenClassification, T5ForTokenClassification], AutoTokenizer]:
+    def load_model(self, model_name: str) -> Tuple[Union[AutoModelForTokenClassification, T5ForTokenClassification, T5CRF], AutoTokenizer]:
         """
         Load a specific model and tokenizer from the Hugging Face repository.
         
@@ -73,6 +80,11 @@ class ModelLoader:
                         self.huggingface_repo,
                         subfolder=model_name
                     )
+                elif model_type == "t5_crf":
+                    self.model = T5CRF.from_pretrained(
+                        self.huggingface_repo,
+                        subfolder=model_name
+                    )
                 else:
                     raise ValueError(f"Unsupported model type for '{model_name}': {model_type}")
 
@@ -96,13 +108,25 @@ class ModelLoader:
         return self.available_models
 
 if __name__ == "__main__":
-    # Example usage
+    # Test loading all models and only show working models
     loader = ModelLoader()
-    selected_model = "ts-cls-ce-experiment-1"
-    try:
-        model, tokenizer = loader.load_model(selected_model)
-        print(f"Loaded model: {selected_model}")
-        print(f"Model architecture: {model}")
-        print(f"Tokenizer: {tokenizer}")
-    except Exception as e:
-        print(f"Failed to load model: {str(e)}")
+    print("Testing loading of all models...")
+    working_models = []
+    failed_models = []
+
+    for selected_model in loader.available_models:
+        try:
+            model, tokenizer = loader.load_model(selected_model)
+            working_models.append(selected_model)
+        except Exception as e:
+            failed_models.append(selected_model)
+
+    print("\nWorking models:")
+    for model in working_models:
+        print(f"- {model}")
+
+    print("\nFailed models:")
+    for model in failed_models:
+        print(f"- {model}")
+
+    print("\nFinished testing all models.")
