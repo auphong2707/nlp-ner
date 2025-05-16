@@ -227,17 +227,6 @@ async def process_form(
             }
         )
 
-    if len(text) > 1000:
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "models": available_models,
-                "error": "Input text is too long (max 1000 characters).",
-                "token_label_pairs": []
-            }
-        )
-
     # Process the text with the selected model
     result = process_text(text, model)
 
