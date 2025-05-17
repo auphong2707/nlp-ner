@@ -137,7 +137,7 @@ if platform.system() != "Windows":
     api = huggingface_hub.HfApi()
     api.upload_large_folder(
         folder_path=RESULTS_ROBERTA_CRF_DIR,
-        path_in_repo=EXPERIMENT_NAME_ROBERTA_CRF,
+        # path_in_repo=EXPERIMENT_NAME_ROBERTA_CRF,
         repo_id="auphong2707/nlp-ner",
         repo_type="model",
         private=False,
