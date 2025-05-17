@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTokenClassification, T5Config, RobertaPreTrainedModel
+from transformers import AutoModelForTokenClassification, AutoTokenizer, T5ForTokenClassification, T5Config, RobertaPreTrainedModel, RobertaConfig
 import sys
 import os
 from typing import Tuple, List, Union
@@ -11,13 +11,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from models.model_t5_crf import T5CRF  # Absolute import after adjusting sys.path
 from models.model_bert_crf import BertCRF  # Import the custom BertCRF class
 
-# Placeholder for RobertaCRF (to be replaced with actual implementation from model_roberta_crf.py)
+# Updated RobertaCRF to use AutoModelForTokenClassification.from_config
 class RobertaCRF(RobertaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
-        self.roberta = AutoModelForTokenClassification(config)
+        print(f"Initializing RobertaCRF with config: model_type={config.model_type}, num_labels={getattr(config, 'num_labels', 'Not specified')}")
+        # Use AutoModelForTokenClassification.from_config to instantiate self.roberta
+        self.roberta = AutoModelForTokenClassification.from_config(config)
         self.crf = CRF(num_tags=config.num_labels, batch_first=True)
         self.init_weights()
+        print("RobertaCRF initialized successfully")
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, labels=None):
         outputs = self.roberta(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
@@ -78,7 +81,6 @@ class RobertaModelLoader(BaseModelLoader):
     def load(self) -> Tuple[Union[AutoModelForTokenClassification, RobertaCRF], AutoTokenizer]:
         try:
             print(f"Loading RoBERTa model from {self.huggingface_repo}, subfolder: {self.model_name}...")
-            # Load the model and tokenizer from the root subfolder
             if self.model_name == "roberta+crf-experiment-3":
                 # Use custom RobertaCRF for roberta+crf-experiment-3
                 self.model = RobertaCRF.from_pretrained(
@@ -231,18 +233,6 @@ class ModelLoaderFactory:
         }
 
     def get_loader(self, model_name: str) -> BaseModelLoader:
-        """
-        Get the appropriate model loader for the specified model name.
-        
-        Args:
-            model_name (str): The name of the model to load.
-            
-        Returns:
-            BaseModelLoader: The loader instance for the model.
-            
-        Raises:
-            ValueError: If the model name is not available or the model type is unsupported.
-        """
         if model_name not in self.available_models:
             raise ValueError(
                 f"Model '{model_name}' not found. Available models: {self.available_models}"
@@ -256,12 +246,6 @@ class ModelLoaderFactory:
         return loader_class(self.huggingface_repo, model_name)
 
     def get_available_models(self) -> List[str]:
-        """
-        Get the list of available models.
-        
-        Returns:
-            List of available model names.
-        """
         return self.available_models
 
 if __name__ == "__main__":
