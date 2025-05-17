@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Named Entity Recognition</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Google Fonts for Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1E1E2F; /* Refined dark background */
+            font-family: 'Roboto', sans-serif;
+            color: #FFFFFF; /* White primary text */
+            margin: 0;
+            height: 100vh;
+            display: flex;
+        }
+        /* Sidebar for model selection */
+        .sidebar {
+            width: 25%;
+            background-color: #2A2A3B; /* Card/panel background */
+            padding: 30px; /* Increased padding for breathing room */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+            height: 100vh;
+            overflow-y: hidden; /* Prevent sidebar scrolling */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        /* Main content area */
+        .main-content {
+            width: 75%;
+            padding: 40px; /* Increased padding for breathing room */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            background-color: transparent;
+        }
+        /* Override Bootstrap heading colors */
+        .card h1 {
+            color: #FFFFFF;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 30px; /* Increased spacing */
+        }
+        .form-label {
+            font-weight: 700;
+            color: #FFFFFF;
+            font-size: 1.4rem;
+            margin-bottom: 10px; /* Added spacing below label */
+        }
+        .form-control {
+            background-color: #2A2A3B; /* Card/panel background */
+            color: #FFFFFF;
+            border: 1px solid #444;
+            border-radius: 8px; /* Rounded corners */
+            font-size: 1.1rem;
+            padding: 12px; /* Modern padding */
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+        }
+        /* Override focus state for form inputs */
+        .form-control:focus {
+            background-color: #2A2A3B;
+            color: #FFFFFF;
+            border-color: #00C9A7; /* Mint Green border on focus */
+            box-shadow: 0 0 0 0.25rem rgba(0, 201, 167, 0.25); /* Mint Green focus ring */
+        }
+        /* Add scroll to input textarea */
+        .form-control {
+            /* No max-height to allow textarea to grow with content */
+            overflow-y: auto; /* Allows scrolling if content overflows */
+            width: 100%;
+        }
+        .form-control::placeholder {
+            color: #BBBBBB; /* Secondary text color */
+        }
+        .form-text {
+            color: #BBBBBB; /* Secondary text color */
+            font-size: 1rem;
+            margin-top: 8px; /* Added spacing above help text */
+        }
+        .invalid-feedback, .model-error {
+            color: #ff6666;
+            font-size: 1rem;
+            margin-top: 8px; /* Added spacing */
+        }
+        .btn-primary {
+            background-color: #00C9A7; /* Mint Green for Extract button */
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px; /* Rounded corners */
+            font-weight: 700; /* Bold text */
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+        }
+        .btn-primary:hover {
+            background-color: #00B89A; /* Darker Mint Green on hover */
+        }
+        .btn-secondary {
+            background-color: #1DB954; /* Spotify Green for Clear button */
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px; /* Rounded corners */
+            font-weight: 700; /* Bold text */
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+        }
+        .btn-secondary:hover {
+            background-color: #1AA34A; /* Darker Spotify Green on hover */
+        }
+        /* Button container to align buttons */
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px; /* Increased spacing */
+        }
+        /* Custom model selection box */
+        .model-selection-box {
+            background-color: #2A2A3B;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #FFFFFF;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .model-selection-box:hover {
+            background-color: #444C56;
+        }
+        /* Model list items */
+        .model-list {
+            background-color: #2A2A3B;
+            border: 1px solid #444;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            /* No max-height or overflow-y for no scrolling */
+        }
+        .model-item {
+            padding: 10px;
+            margin: 6px;
+            cursor: pointer;
+            color: #FFFFFF;
+            background-color: #444C56;
+            border: 2px solid #5A6577;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: left;
+        }
+        .model-item:hover {
+            background-color: #00C9A7; /* Mint Green highlight on hover */
+        }
+        .output {
+            display: none;
+            margin-top: 2rem;
+            border: 1px solid #444;
+            border-radius: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            width: 100%;
+            padding: 20px;
+            background-color: #2A2A3B;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .output.visible {
+            display: block;
+        }
+        .alert-danger {
+            background-color: #4a1e1e;
+            color: #ff9999;
+            border-color: #662222;
+            font-size: 1rem;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        /* Outer box for word and entity label */
+        .token-wrapper {
+            display: inline-flex;
+            align-items: center;
+            border: 2px solid #FFFFFF; /* White border for visibility */
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-right: 3px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* Make the token (word with entity) bold */
+        .token-wrapper > span:first-child {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        /* Entity label box (tag) */
+        .entity-label-box {
+            display: inline-block;
+            padding: 6px 10px;
+            margin: 4px 0 4px 6px;
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        /* Fallback for any unrecognized entity types */
+        [class^="entity-label-"] {
+            background-color: #444C56; /* Darker fallback */
+            color: #FFFFFF;
+        }
+        [class^="token-wrapper-"] {
+            background-color: #3A4355; /* Slightly lighter fallback */
+        }
+        /* Entity type-specific colors for the label box and token-wrapper */
+        .entity-label-PER, .entity-label-B-PER, .entity-label-I-PER {
+            background-color: #FF6B6B; /* Light red for smaller box */
+        }
+        .token-wrapper-PER {
+            background-color: #B33333; /* Darker red for bigger box */
+        }
+        .entity-label-LOC, .entity-label-B-LOC, .entity-label-I-LOC {
+            background-color: #6C63FF;
+        }
+        .token-wrapper-LOC {
+            background-color: #8033b3;
+        }
+        .entity-label-ORG, .entity-label-B-ORG, .entity-label-I-ORG {
+            background-color: #FFA500;
+        }
+        .token-wrapper-ORG {
+            background-color: #b37f33;
+        }
+        .entity-label-ANIM, .entity-label-B-ANIM, .entity-label-I-ANIM {
+            background-color: #66ff66;
+        }
+        .token-wrapper-ANIM {
+            background-color: #33b333;
+        }
+        .entity-label-BIO, .entity-label-B-BIO, .entity-label-I-BIO {
+            background-color: #66b3ff;
+        }
+        .token-wrapper-BIO {
+            background-color: #337fb3;
+        }
+        .entity-label-CEL, .entity-label-B-CEL, .entity-label-I-CEL {
+            background-color: #ff66b3;
+        }
+        .token-wrapper-CEL {
+            background-color: #b3337f;
+        }
+        .entity-label-DIS, .entity-label-B-DIS, .entity-label-I-DIS {
+            background-color: #ffb366;
+        }
+        .token-wrapper-DIS {
+            background-color: #b37f33;
+        }
+        .entity-label-EVE, .entity-label-B-EVE, .entity-label-I-EVE {
+            background-color: #66cccc;
+        }
+        .token-wrapper-EVE {
+            background-color: #339999;
+        }
+        .entity-label-FOOD, .entity-label-B-FOOD, .entity-label-I-FOOD {
+            background-color: #ff9966;
+        }
+        .token-wrapper-FOOD {
+            background-color: #b36633;
+        }
+        .entity-label-INST, .entity-label-B-INST, .entity-label-I-INST {
+            background-color: #b3ff66;
+        }
+        .token-wrapper-INST {
+            background-color: #80b333;
+        }
+        .entity-label-MEDIA, .entity-label-B-MEDIA, .entity-label-I-MEDIA {
+            background-color: #66b3ff;
+        }
+        .token-wrapper-MEDIA {
+            background-color: #337fb3;
+        }
+        .entity-label-MYTH, .entity-label-B-MYTH, .entity-label-I-MYTH {
+            background-color: #ff66b3;
+        }
+        .token-wrapper-MYTH {
+            background-color: #b3337f;
+        }
+        .entity-label-PLANT, .entity-label-B-PLANT, .entity-label-I-PLANT {
+            background-color: #66ffb3;
+        }
+        .token-wrapper-PLANT {
+            background-color: #33b37f;
+        }
+        .entity-label-TIME, .entity-label-B-TIME, .entity-label-I-TIME {
+            background-color: #b366ff;
+        }
+        .token-wrapper-TIME {
+            background-color: #8033b3;
+        }
+        .entity-label-VEHI, .entity-label-B-VEHI, .entity-label-I-VEHI {
+            background-color: #ffb3ff;
+        }
+        .token-wrapper-VEHI {
+            background-color: #b37fb3;
+        }
+        .entity-label-O, .entity-label-PAD {
+            display: none;
+        }
+        .token {
+            margin-right: 3px;
+            display: inline-block;
+            color: #FFFFFF;
+            font-size: 1.1rem;
+        }
+        .no-tokens {
+            color: #FFFFFF;
+            font-style: italic;
+            font-size: 1rem;
+        }
+        .spinner-container {
+            display: none;
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .spinner-container.visible {
+            display: block;
+        }
+        .spinner-border {
+            border-color: #00C9A7;
+            border-right-color: transparent;
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar for model selection -->
+    <div class="sidebar">
+        <div class="card">
+            <h1 class="text-center mb-4">Named Entity Recognition</h1>
+            <form id="extract-form" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label for="model" class="form-label">Select Model:</label>
+                    <!-- Hidden input to store selected model -->
+                    <input type="hidden" id="selectedModel" name="model">
+                    <!-- Model selection box -->
+                    <div class="model-selection-box" data-bs-toggle="collapse" data-bs-target="#modelList" aria-expanded="false" aria-controls="modelList">
+                        <span id="selectedModelText">--Please choose a model--</span>
+                        <span>▼</span>
+                    </div>
+                    <!-- Collapsible model list -->
+                    <div class="collapse" id="modelList">
+                        <div class="model-list">
+                            {% for model in models %}
+                                <div class="model-item" data-value="{{ model }}" onclick="selectModel('{{ model }}', '{{ model }}')">{{ model }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div id="modelError" class="model-error" style="display: none;">Please select a model.</div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Main content area -->
+    <div class="main-content">
+        <div class="card">
+            <form id="extract-form-main">
+                <div class="mb-3">
+                    <label for="text" class="form-label">Input Text:</label>
+                    <textarea class="form-control" id="text" name="text" rows="6" placeholder="Enter text (e.g., Duc Minh Vu is handsome and from Hanoi.)" aria-describedby="textHelp" required>{{ input_text if input_text else '' }}</textarea>
+                    <div id="textHelp" class="form-text">Enter text to extract Named Entities.</div>
+                </div>
+                <div class="button-container">
+                    <button type="submit" class="btn btn-primary">Extract</button>
+                    <button type="button" class="btn btn-secondary" id="clearButton">Clear</button>
+                </div>
+            </form>
+            <div class="spinner-container" id="spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            {% if error %}
+                <div class="alert alert-danger mt-3" role="alert" id="errorMessage">{{ error }}</div>
+            {% endif %}
+            <div class="output card p-3 {% if token_label_pairs or error %}visible{% endif %}" id="output">
+                {% if token_label_pairs %}
+                    <p class="card-text">
+                        {% for pair in token_label_pairs %}
+                            <span class="token">
+                                {% if pair.label != 'O' and pair.label != 'PAD' %}
+                                    <span class="token-wrapper token-wrapper-{{ pair.type }}">
+                                        <span>{{ pair.token }}</span>
+                                        <span class="entity-label-box entity-label-{{ pair.type }}">{{ pair.label }}</span>
+                                    </span>
+                                {% else %}
+                                    {{ pair.token }}
+                                {% endif %}
+                            </span>
+                        {% endfor %}
+                    </p>
+                {% else %}
+                    <p class="no-tokens">No tokens processed. Please enter text and extract.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        // Function to handle model selection
+        function selectModel(value, displayText) {
+            const selectedModelInput = document.getElementById('selectedModel');
+            const selectedModelText = document.getElementById('selectedModelText');
+            selectedModelInput.value = value;
+            selectedModelText.textContent = displayText;
+            // Collapse the list after selection
+            const collapseElement = document.getElementById('modelList');
+            const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                toggle: false
+            });
+            bsCollapse.hide();
+        }
+
+        // Bootstrap form validation and custom model validation
+        (function () {
+            'use strict';
+            const formSidebar = document.getElementById('extract-form');
+            const formMain = document.getElementById('extract-form-main');
+            const selectedModelInput = document.getElementById('selectedModel');
+            const modelError = document.getElementById('modelError');
+            const textInput = document.getElementById('text');
+            const textHelp = document.getElementById('textHelp');
+            const output = document.getElementById('output');
+            const clearButton = document.getElementById('clearButton');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Hide form help text when user starts typing
+            textInput.addEventListener('input', function () {
+                if (textInput.value.trim() !== '') {
+                    textHelp.style.display = 'none';
+                } else {
+                    textHelp.style.display = 'block';
+                }
+            });
+
+            // Clear button functionality
+            clearButton.addEventListener('click', function () {
+                // Explicitly clear the textarea
+                textInput.value = '';
+                // Explicitly reset the model selection to the default option
+                selectedModelInput.value = '';
+                document.getElementById('selectedModelText').textContent = '--Please choose a model--';
+                // Show form help text
+                textHelp.style.display = 'block';
+                // Hide output
+                output.classList.remove('visible');
+                output.innerHTML = '<p class="no-tokens">No tokens processed. Please enter text and extract.</p>';
+                // Hide model error
+                modelError.style.display = 'none';
+                // Hide any error messages
+                if (errorMessage) {
+                    errorMessage.remove();
+                }
+                // Reset form validation state
+                formSidebar.classList.remove('was-validated');
+                formMain.classList.remove('was-validated');
+                // Scroll input and output to top
+                textInput.scrollTop = 0;
+                output.scrollTop = 0;
+            });
+
+            // Handle form submission from the main content area
+            formMain.addEventListener('submit', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Reset model error
+                modelError.style.display = 'none';
+
+                // Check if a model is selected
+                if (!selectedModelInput.value) {
+                    modelError.style.display = 'block';
+                    formSidebar.classList.add('was-validated');
+                    return;
+                }
+
+                // Proceed with form submission if validation passes
+                if (formMain.checkValidity()) {
+                    submitForm();
+                }
+                formMain.classList.add('was-validated');
+            }, false);
+        })();
+
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function () {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        // Form submission with Fetch API
+        async function submitForm() {
+            const formSidebar = document.getElementById('extract-form');
+            const formMain = document.getElementById('extract-form-main');
+            const spinner = document.getElementById('spinner');
+            const output = document.getElementById('output');
+            const textInput = document.getElementById('text');
+            const formData = new FormData(formSidebar);
+            formData.append('text', textInput.value);
+
+            // Show spinner
+            spinner.classList.add('visible');
+            output.classList.remove('visible');
+
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    body: formData
+                });
+                const html = await response.text();
+
+                // Create a temporary container to parse the response HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Update the output section
+                const newOutput = doc.querySelector('.output');
+                if (newOutput) {
+                    output.innerHTML = newOutput.innerHTML;
+                    output.classList.add('visible');
+                    // Scroll input and output to top after successful extraction
+                    textInput.scrollTop = 0;
+                    output.scrollTop = 0;
+                }
+
+                // Update error messages if any
+                const newError = doc.querySelector('.alert');
+                const existingError = document.querySelector('.alert');
+                if (newError) {
+                    if (existingError) {
+                        existingError.replaceWith(newError);
+                    } else {
+                        formMain.insertAdjacentElement('afterend', newError);
+                    }
+                } else if (existingError) {
+                    existingError.remove();
+                }
+
+                // Re-initialize tooltips for new content
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger mt-3';
+                errorDiv.id = 'errorMessage';
+                errorDiv.textContent = 'An error occurred while processing the request.';
+                formMain.insertAdjacentElement('afterend', errorDiv);
+            } finally {
+                spinner.classList.remove('visible');
+            }
+        }
+    </script>
+</body>
+</html>
