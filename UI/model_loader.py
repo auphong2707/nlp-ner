@@ -213,6 +213,20 @@ class ModelLoaderFactory:
             "T5-cls-focal-experiment-(5e-4)",
             "roberta+crf-experiment-3"
         ]
+        
+        # Mapping for converting model names to official names
+        self.model_name_mapping = {
+            "T5+CRF-experiment-first": "T5 + CRF",
+            "bert+crf-experiment-5": "BERT + CRF",
+            "roberta+crf-experiment-3": "RoBERTa + CRF",
+            "t5-cls-ce-experiment-1": "T5-CLS (CE)",
+            "roberta-cls-focal-experiment-1": "RoBERTa-CLS (Focal)",
+            "roberta-cls-ce-experiment-2": "RoBERTa-CLS (CE)",
+            "bert-cls-focal-experiment-2": "BERT-CLS (Focal)",
+            "bert-cls-ce-experiment-2": "BERT-CLS (CE)",
+            "T5-cls-focal-experiment-(5e-4)": "T5-CLS (Focal)"
+        }
+        
         self.model_type_map = {
             "bert-cls-ce-experiment-2": "bert",
             "T5+CRF-experiment-first": "t5_crf",
@@ -238,15 +252,20 @@ class ModelLoaderFactory:
                 f"Model '{model_name}' not found. Available models: {self.available_models}"
             )
         
+        # Map the downloaded model name to the official name
+        official_model_name = self.model_name_mapping.get(model_name, model_name)
+        print(f"Official Model Name: {official_model_name}")
+        
         model_type = self.model_type_map.get(model_name)
         if model_type not in self.loader_map:
             raise ValueError(f"Unsupported model type for '{model_name}': {model_type}")
         
         loader_class = self.loader_map[model_type]
-        return loader_class(self.huggingface_repo, model_name)
+        return loader_class(self.huggingface_repo, official_model_name)
 
     def get_available_models(self) -> List[str]:
         return self.available_models
+
 
 if __name__ == "__main__":
     # Test loading all models and only show working models
