@@ -221,7 +221,7 @@ async def read_root(request: Request):
 async def process_form(
     request: Request,
     text: str = Form(...),
-    model: str = Form(...),
+    model: str = Form(...)
 ):
     if not text.strip():
         return templates.TemplateResponse(
@@ -230,15 +230,19 @@ async def process_form(
                 "request": request,
                 "models": available_models,
                 "error": "Input text cannot be empty or whitespace.",
-                "token_label_pairs": [],
-            },
+                "token_label_pairs": []
+            }
         )
 
-    # Convert model name to official name using the mapping
-    official_model_name = factory.model_name_mapping.get(model, model)
-
-    # Process the text with the selected model
+    # 🔽 Load and process the text
     result = process_text(text, model)
+
+    # 🔽 Map internal model name to display name
+    display_models = factory.get_display_models()
+    official_model_name = next(
+        (m["display_name"] for m in display_models if m["internal_name"] == model),
+        model
+    )
 
     if "error" in result:
         return templates.TemplateResponse(
@@ -249,8 +253,8 @@ async def process_form(
                 "error": result["error"],
                 "token_label_pairs": [],
                 "selected_model": official_model_name,
-                "input_text": text,
-            },
+                "input_text": text
+            }
         )
 
     token_label_pairs = result.get("token_label_pairs", [])
@@ -263,8 +267,8 @@ async def process_form(
                 "error": "No tokens processed from the input text.",
                 "token_label_pairs": [],
                 "selected_model": official_model_name,
-                "input_text": text,
-            },
+                "input_text": text
+            }
         )
 
     return templates.TemplateResponse(
@@ -273,10 +277,11 @@ async def process_form(
             "request": request,
             "models": available_models,
             "token_label_pairs": token_label_pairs,
-            "selected_model": official_model_name,  # Use official model name
-            "input_text": text,
-        },
+            "selected_model": official_model_name,
+            "input_text": text
+        }
     )
+
 
 if __name__ == "__main__":
     import uvicorn
