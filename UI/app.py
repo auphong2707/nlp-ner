@@ -196,6 +196,11 @@ def process_text(text: str, model_name: str) -> dict:
                 "type": entity_type
             })
 
+        # Free up GPU memory
+        del model
+        del tokenizer
+        torch.cuda.empty_cache()
+
         logger.info(f"Model {model_name} - Processed token-label pairs: {token_label_pairs}")
         return {"token_label_pairs": token_label_pairs}
     except Exception as e:
