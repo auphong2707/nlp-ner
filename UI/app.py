@@ -24,7 +24,8 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "t
 
 # Initialize the model loader factory
 factory = ModelLoaderFactory()
-available_models = factory.get_available_models()
+available_models = factory.get_display_models()
+
 
 # Cache for loaded models
 model_cache = {}
@@ -212,8 +213,9 @@ def process_text(text: str, model_name: str) -> dict:
 async def read_root(request: Request):
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "models": available_models}
+        {"request": request, "models": available_models, "selected_model": ""}
     )
+
 
 @app.post("/", response_class=HTMLResponse)
 async def process_form(

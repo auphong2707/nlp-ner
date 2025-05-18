@@ -363,8 +363,11 @@
                     <div class="collapse" id="modelList">
                         <div class="model-list">
                             {% for model in models %}
-                                <div class="model-item" data-value="{{ model }}" onclick="selectModel('{{ model }}', '{{ model }}')">{{ model }}</div>
+                                <div class="model-item" data-value="{{ model.internal_name }}" onclick="selectModel('{{ model.internal_name }}', '{{ model.display_name }}')">
+                                    {{ model.display_name }}
+                                </div>
                             {% endfor %}
+
                         </div>
                     </div>
                     <div id="modelError" class="model-error" style="display: none;">Please select a model.</div>
