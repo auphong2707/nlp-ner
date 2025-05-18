@@ -356,7 +356,7 @@
                     <input type="hidden" id="selectedModel" name="model">
                     <!-- Model selection box -->
                     <div class="model-selection-box" data-bs-toggle="collapse" data-bs-target="#modelList" aria-expanded="false" aria-controls="modelList">
-                        <span id="selectedModelText">--Please choose a model--</span>
+                        <span id="selectedModelText">{{ selected_model if selected_model else '--Please choose a model--' }}</span>
                         <span>▼</span>
                     </div>
                     <!-- Collapsible model list -->
