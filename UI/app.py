@@ -180,6 +180,11 @@ def process_text(text: str, model_name: str) -> dict:
 
         logger.info(f"Model {model_name} - Word labels after mapping: {word_labels}")
 
+        # Free up GPU memory
+        del model
+        del tokenizer
+        torch.cuda.empty_cache()
+
         # Check for mismatch between input words and word labels
         if len(input_words) != len(word_labels):
             logger.warning(f"Mismatch between input words ({len(input_words)}) and word labels ({len(word_labels)}) for model {model_name}.")
@@ -195,11 +200,6 @@ def process_text(text: str, model_name: str) -> dict:
                 "label": label,
                 "type": entity_type
             })
-
-        # Free up GPU memory
-        del model
-        del tokenizer
-        torch.cuda.empty_cache()
 
         logger.info(f"Model {model_name} - Processed token-label pairs: {token_label_pairs}")
         return {"token_label_pairs": token_label_pairs}
