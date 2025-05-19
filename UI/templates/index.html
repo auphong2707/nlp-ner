@@ -10,9 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #1E1E2F; /* Refined dark background */
+            background-color: #F5F7FA; /* Light background */
             font-family: 'Roboto', sans-serif;
-            color: #FFFFFF; /* White primary text */
+            color: #212529; /* Dark primary text */
             margin: 0;
             height: 100vh;
             display: flex;
@@ -20,11 +20,11 @@
         /* Sidebar for model selection */
         .sidebar {
             width: 25%;
-            background-color: #2A2A3B; /* Card/panel background */
-            padding: 30px; /* Increased padding for breathing room */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+            background-color: #FFFFFF; /* White card/panel background */
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Lighter shadow */
             height: 100vh;
-            overflow-y: hidden; /* Prevent sidebar scrolling */
+            overflow-y: hidden;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -32,7 +32,7 @@
         /* Main content area */
         .main-content {
             width: 75%;
-            padding: 40px; /* Increased padding for breathing room */
+            padding: 40px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -45,63 +45,62 @@
         }
         /* Override Bootstrap heading colors */
         .card h1 {
-            color: #FFFFFF;
+            color: #212529;
             font-size: 2.2rem;
             font-weight: 700;
-            margin-bottom: 30px; /* Increased spacing */
+            margin-bottom: 30px;
         }
         .form-label {
             font-weight: 700;
-            color: #FFFFFF;
+            color: #212529;
             font-size: 1.4rem;
-            margin-bottom: 10px; /* Added spacing below label */
+            margin-bottom: 10px;
         }
         .form-control {
-            background-color: #2A2A3B; /* Card/panel background */
-            color: #FFFFFF;
-            border: 1px solid #444;
-            border-radius: 8px; /* Rounded corners */
+            background-color: #FFFFFF; /* White background */
+            color: #212529;
+            border: 1px solid #CED4DA; /* Light gray border */
+            border-radius: 8px;
             font-size: 1.1rem;
-            padding: 12px; /* Modern padding */
+            padding: 12px;
             width: 100%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         /* Override focus state for form inputs */
         .form-control:focus {
-            background-color: #2A2A3B;
-            color: #FFFFFF;
+            background-color: #FFFFFF;
+            color: #212529;
             border-color: #00C9A7; /* Mint Green border on focus */
-            box-shadow: 0 0 0 0.25rem rgba(0, 201, 167, 0.25); /* Mint Green focus ring */
+            box-shadow: 0 0 0 0.25rem rgba(0, 201, 167, 0.25);
         }
         /* Add scroll to input textarea */
         .form-control {
-            /* No max-height to allow textarea to grow with content */
-            overflow-y: auto; /* Allows scrolling if content overflows */
+            overflow-y: auto;
             width: 100%;
         }
         .form-control::placeholder {
-            color: #BBBBBB; /* Secondary text color */
+            color: #6C757D; /* Darker gray for placeholder */
         }
         .form-text {
-            color: #BBBBBB; /* Secondary text color */
+            color: #6C757D;
             font-size: 1rem;
-            margin-top: 8px; /* Added spacing above help text */
+            margin-top: 8px;
         }
         .invalid-feedback, .model-error {
-            color: #ff6666;
+            color: #DC3545; /* Bootstrap red for errors */
             font-size: 1rem;
-            margin-top: 8px; /* Added spacing */
+            margin-top: 8px;
         }
         .btn-primary {
             background-color: #00C9A7; /* Mint Green for Extract button */
             color: #FFFFFF;
             border: none;
             padding: 12px 24px;
-            border-radius: 8px; /* Rounded corners */
-            font-weight: 700; /* Bold text */
+            border-radius: 8px;
+            font-weight: 700;
             cursor: pointer;
             transition: background 0.3s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .btn-primary:hover {
             background-color: #00B89A; /* Darker Mint Green on hover */
@@ -111,11 +110,11 @@
             color: #FFFFFF;
             border: none;
             padding: 12px 24px;
-            border-radius: 8px; /* Rounded corners */
-            font-weight: 700; /* Bold text */
+            border-radius: 8px;
+            font-weight: 700;
             cursor: pointer;
             transition: background 0.3s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .btn-secondary:hover {
             background-color: #1AA34A; /* Darker Spotify Green on hover */
@@ -125,66 +124,66 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px; /* Increased spacing */
+            margin-top: 20px;
         }
         /* Custom model selection box */
         .model-selection-box {
-            background-color: #2A2A3B;
-            border: 1px solid #444;
+            background-color: #FFFFFF;
+            border: 1px solid #CED4DA;
             padding: 8px;
             border-radius: 8px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #FFFFFF;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            color: #212529;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .model-selection-box:hover {
-            background-color: #444C56;
+            background-color: #E9ECEF; /* Light gray on hover */
         }
         /* Model list items */
         .model-list {
-            background-color: #2A2A3B;
-            border: 1px solid #444;
+            background-color: #FFFFFF;
+            border: 1px solid #CED4DA;
             border-top: none;
             border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            /* No max-height or overflow-y for no scrolling */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .model-item {
             padding: 10px;
             margin: 6px;
             cursor: pointer;
-            color: #FFFFFF;
-            background-color: #444C56;
-            border: 2px solid #5A6577;
+            color: #212529;
+            background-color: #E9ECEF;
+            border: 2px solid #ADB5BD;
             border-radius: 8px;
             font-weight: bold;
             text-align: left;
         }
         .model-item:hover {
             background-color: #00C9A7; /* Mint Green highlight on hover */
+            color: #FFFFFF;
         }
         .output {
             display: none;
             margin-top: 2rem;
-            border: 1px solid #444;
+            border: 1px solid #CED4DA;
             border-radius: 12px;
             max-height: 250px;
             overflow-y: auto;
             width: 100%;
             padding: 20px;
-            background-color: #2A2A3B;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            background-color: #FFFFFF;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .output.visible {
             display: block;
         }
         .alert-danger {
-            background-color: #4a1e1e;
-            color: #ff9999;
-            border-color: #662222;
+            background-color: #F8D7DA;
+            color: #721C24;
+            border-color: #F5C6CB;
             font-size: 1rem;
             padding: 12px;
             border-radius: 8px;
@@ -194,12 +193,11 @@
         .token-wrapper {
             display: inline-flex;
             align-items: center;
-            border: none;
-            padding: 3px 6px;
-            margin: 2px 4px;
+            border: 2px solid #212529; /* Dark border for visibility */
+            padding: 6px 10px;
             border-radius: 8px;
             margin-right: 3px;
-    
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         /* Make the token (word with entity) bold */
         .token-wrapper > span:first-child {
@@ -209,111 +207,111 @@
         /* Entity label box (tag) */
         .entity-label-box {
             display: inline-block;
-            padding: 2px 5px;
+            padding: 6px 10px;
             margin: 4px 0 4px 6px;
             border-radius: 6px;
             color: #FFFFFF;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
         /* Fallback for any unrecognized entity types */
         [class^="entity-label-"] {
-            background-color: #444C56; /* Darker fallback */
+            background-color: #6C757D; /* Darker gray fallback */
             color: #FFFFFF;
         }
         [class^="token-wrapper-"] {
-            background-color: #3A4355; /* Slightly lighter fallback */
+            background-color: #E9ECEF; /* Light gray fallback */
         }
         /* Entity type-specific colors for the label box and token-wrapper */
         .entity-label-PER, .entity-label-B-PER, .entity-label-I-PER {
             background-color: #FF6B6B; /* Light red for smaller box */
         }
         .token-wrapper-PER {
-            background-color: #B33333; /* Darker red for bigger box */
+            background-color: #FFD7D7; /* Lighter red for bigger box */
         }
-        .entity-label-LOC, .entity-label-B-LOC, .entity-label-I-LOC {
+        .entity-label-LOC, .entity-label B-LOC, .entity-label-I-LOC {
             background-color: #6C63FF;
         }
         .token-wrapper-LOC {
-            background-color: #8033b3;
+            background-color: #D7D4FF; /* Lighter purple */
         }
         .entity-label-ORG, .entity-label-B-ORG, .entity-label-I-ORG {
             background-color: #FFA500;
         }
         .token-wrapper-ORG {
-            background-color: #b37f33;
+            background-color: #FFE4B5; /* Lighter orange */
         }
         .entity-label-ANIM, .entity-label-B-ANIM, .entity-label-I-ANIM {
-            background-color: #66ff66;
+            background-color: #66FF66;
         }
         .token-wrapper-ANIM {
-            background-color: #33b333;
+            background-color: #D4FFD4; /* Lighter green */
         }
         .entity-label-BIO, .entity-label-B-BIO, .entity-label-I-BIO {
-            background-color: #66b3ff;
+            background-color: #66B3FF;
         }
         .token-wrapper-BIO {
-            background-color: #337fb3;
+            background-color: #D4E6FF; /* Lighter blue */
         }
         .entity-label-CEL, .entity-label-B-CEL, .entity-label-I-CEL {
-            background-color: #ff66b3;
+            background-color: #FF66B3;
         }
         .token-wrapper-CEL {
-            background-color: #b3337f;
+            background-color: #FFD4E6; /* Lighter pink */
         }
         .entity-label-DIS, .entity-label-B-DIS, .entity-label-I-DIS {
-            background-color: #ffb366;
+            background-color: #FFB366;
         }
         .token-wrapper-DIS {
-            background-color: #b37f33;
+            background-color: #FFE6CC; /* Lighter peach */
         }
         .entity-label-EVE, .entity-label-B-EVE, .entity-label-I-EVE {
-            background-color: #66cccc;
+            background-color: #66CCCC;
         }
         .token-wrapper-EVE {
-            background-color: #339999;
+            background-color: #D4F0F0; /* Lighter cyan */
         }
         .entity-label-FOOD, .entity-label-B-FOOD, .entity-label-I-FOOD {
-            background-color: #ff9966;
+            background-color: #FF9966;
         }
         .token-wrapper-FOOD {
-            background-color: #b36633;
+            background-color: #FFE6D4; /* Lighter coral */
         }
         .entity-label-INST, .entity-label-B-INST, .entity-label-I-INST {
-            background-color:rgb(157, 216, 99);
+            background-color: #B3FF66;
         }
         .token-wrapper-INST {
-            background-color: #80b333;
+            background-color: #E6FFD4; /* Lighter lime */
         }
         .entity-label-MEDIA, .entity-label-B-MEDIA, .entity-label-I-MEDIA {
-            background-color: #66b3ff;
+            background-color: #66B3FF;
         }
         .token-wrapper-MEDIA {
-            background-color: #337fb3;
+            background-color: #D4E6FF; /* Lighter blue */
         }
         .entity-label-MYTH, .entity-label-B-MYTH, .entity-label-I-MYTH {
-            background-color: #ff66b3;
+            background-color: #FF66B3;
         }
         .token-wrapper-MYTH {
-            background-color: #b3337f;
+            background-color: #FFD4E6; /* Lighter pink */
         }
         .entity-label-PLANT, .entity-label-B-PLANT, .entity-label-I-PLANT {
-            background-color: #66ffb3;
+            background-color: #66FFB3;
         }
         .token-wrapper-PLANT {
-            background-color: #33b37f;
+            background-color: #D4FFE6; /* Lighter mint */
         }
         .entity-label-TIME, .entity-label-B-TIME, .entity-label-I-TIME {
-            background-color: #b366ff;
+            background-color: #B366FF;
         }
         .token-wrapper-TIME {
-            background-color: #8033b3;
+            background-color: #E6D4FF; /* Lighter lavender */
         }
         .entity-label-VEHI, .entity-label-B-VEHI, .entity-label-I-VEHI {
-            background-color: #ffb3ff;
+            background-color: #FFB3FF;
         }
         .token-wrapper-VEHI {
-            background-color: #b37fb3;
+            background-color: #FFE6FF; /* Lighter magenta */
         }
         .entity-label-O, .entity-label-PAD {
             display: none;
@@ -321,11 +319,11 @@
         .token {
             margin-right: 3px;
             display: inline-block;
-            color: #FFFFFF;
+            color: #212529;
             font-size: 1.1rem;
         }
         .no-tokens {
-            color: #FFFFFF;
+            color: #212529;
             font-style: italic;
             font-size: 1rem;
         }
