@@ -193,12 +193,14 @@
         .token-wrapper {
             display: inline-flex;
             align-items: center;
-            border: 2px solid #212529; /* Dark border for visibility */
-            padding: 6px 10px;
-            border-radius: 8px;
-            margin-right: 3px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid #212529; /* Keep black border */
+            padding: 2px 6px; /* Reduce padding */
+            border-radius: 6px;
+            margin: 2px 2px; /* Smaller margin to avoid touching */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            font-size: 0.95rem; /* Slightly smaller font */
         }
+
         /* Make the token (word with entity) bold */
         .token-wrapper > span:first-child {
             font-weight: bold;
@@ -278,7 +280,7 @@
             background-color: #FFE6D4; /* Lighter coral */
         }
         .entity-label-INST, .entity-label-B-INST, .entity-label-I-INST {
-            background-color: #B3FF66;
+            background-color:rgb(150, 215, 85);
         }
         .token-wrapper-INST {
             background-color: #E6FFD4; /* Lighter lime */
@@ -308,7 +310,7 @@
             background-color: #E6D4FF; /* Lighter lavender */
         }
         .entity-label-VEHI, .entity-label-B-VEHI, .entity-label-I-VEHI {
-            background-color: #FFB3FF;
+            background-color:rgb(221, 146, 221);
         }
         .token-wrapper-VEHI {
             background-color: #FFE6FF; /* Lighter magenta */
